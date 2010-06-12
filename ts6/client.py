@@ -12,23 +12,13 @@ def mkuid():
     return ''.join([uidchars[x] for x in uid])
 
 class Client:
-    nick = ''
-    user = ''
-    host = ''
-    gecos = ''
-    modes = ''
-
     def __init__(self, server, nick, *args, **kwargs):
-        user = 'twisted'
-        host = server.name
-        gecos = 'twisted-ts6 client'
-        if 'user' in kwargs.keys():
-            user = kwargs['user']
-        if 'host' in kwargs.keys():
-            host = kwargs['host']
-        if 'gecos' in kwargs.keys():
-            gecos = kwargs['gecos']
+        self.nick = nick
+        self.user = kwargs.get('user', 'twisted')
+        self.host = kwargs.get('host', server.name)
+        self.gecos = kwargs.get('gecos', 'twisted-ts6 client')
+        self.modes = kwargs.get('modes', 'oS')
         if 'uid' in kwargs.keys():
-            uid = kwargs['uid']
+            self.uid = kwargs['uid']
         else:
-            uid = server.sid + mkuid()
+            self.uid = server.sid + mkuid()
