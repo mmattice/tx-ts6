@@ -26,10 +26,14 @@ class Conn(basic.LineReceiver):
         self.sendLine("SVINFO 6 3 0 :%lu" % int(time.time()))
 
     def sendLine(self, line):
+        print "-> %s" % line
         basic.LineReceiver.sendLine(self, line + '\r')
 
     def dataReceived(self, data):
         basic.LineReceiver.dataReceived(self, data.replace('\r', ''))
 
     def lineReceived(self, line):
-        print "Line: %s" % line
+        print "<- %s" % line
+        lp = line.split()
+        if lp[0].lower() == 'ping':
+            self.sendLine('PONG %s' % lp[1])
