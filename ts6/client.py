@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import time
+
 nextuid = [ 0, 0, 0, 0, 0, 0 ]
 uidchars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 def mkuid():
@@ -13,6 +15,7 @@ def mkuid():
 
 class Client:
     def __init__(self, server, nick, *args, **kwargs):
+        self.server = server
         self.nick = nick
         self.user = kwargs.get('user', 'twisted')
         self.host = kwargs.get('host', server.name)
@@ -21,4 +24,10 @@ class Client:
         if 'uid' in kwargs.keys():
             self.uid = kwargs['uid']
         else:
-            self.uid = server.sid + mkuid()
+            self.uid = mkuid()
+        self.euid = server.sid + self.uid
+
+    def introduce(self, conn):
+        conn.sendLine(':%s EUID %s 1 %lu %s %s %s 0 %s * * :%s' %
+                      (conn.me.sid, self.nick, int(time.time()), self.modes,
+                       self.user, self.host, self.euid, self.gecos))
