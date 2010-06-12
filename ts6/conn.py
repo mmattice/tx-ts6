@@ -24,7 +24,7 @@ class Conn(basic.LineReceiver):
                      'modes': lp[5] })
         self.cbyuid[lp[9]] = c
         self.cbynick[lp[2]] = c
-        print 'Client: %s' % lp[2]
+        self.newClient(c)
 
     # PASS theirpw TS 6 :sid
     def got_pass(self, line):
@@ -44,7 +44,6 @@ class Conn(basic.LineReceiver):
         s = Server(lp[4], lp[2], lp[5][1:])
         self.sbysid[lp[4]] = s
         self.sbyname[lp[2]] = s
-        print 'Server: %s' % lp[2]
 
     def __init__(self):
         self.sbysid = {}
@@ -74,14 +73,12 @@ class Conn(basic.LineReceiver):
         self.sendLine("SVINFO 6 3 0 :%lu" % int(time.time()))
 
     def sendLine(self, line):
-        print "-> %s" % line
         basic.LineReceiver.sendLine(self, line + '\r')
 
     def dataReceived(self, data):
         basic.LineReceiver.dataReceived(self, data.replace('\r', ''))
 
     def lineReceived(self, line):
-        print "<- %s" % line
         lp = line.split()
         if lp[0].lower() == 'ping':
             self.sendLine('PONG %s' % lp[1])
@@ -94,3 +91,7 @@ class Conn(basic.LineReceiver):
             print 'Unhandled msg: %s' % line
             return
         self.msgs[lk.lower()](line)
+
+    # Extra interface stuff.
+    def newClient(self, client):
+        pass

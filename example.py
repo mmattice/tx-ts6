@@ -17,6 +17,17 @@ class IdoruConn(Conn):
         Conn.connectionMade(self)
         self.introduce(Idoru(self, self.me, 'idoru'))
 
+    def sendLine(self, line):
+        Conn.sendLine(self, line)
+        print '-> %s' % line
+
+    def lineReceived(self, line):
+        print '<- %s' % line
+        Conn.lineReceived(self, line)
+
+    def newClient(self, client):
+        print 'Idoru: client %s' % client.nick
+
 class IdoruFactory(protocol.ClientFactory):
     protocol = IdoruConn
 
