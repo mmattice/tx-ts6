@@ -87,6 +87,33 @@ class Conn(basic.LineReceiver):
     def got_notice(self, line):
         pass
 
+    # ENCAP, argh.
+    # :src ENCAP * <cmd [args...]>
+    def got_encap(self, line):
+        lp = line.split(' ', 4)
+        newline = '%s %s %s' % (lp[0], lp[3], lp[4])
+        cmd = lp[3].lower()
+        if cmd not in self.msgs:
+            print 'Unhandled ENCAP: %s' % line
+            return
+        self.msgs[cmd](newline)
+
+    # SU
+    # :sid SU uid account
+    def got_su(self, line):
+        print 'SU: %s' % line
+        lp = line.split(' ')
+        cuid = lp[2]
+        if cuid[0] == ':':
+            cuid = cuid[1:]
+        if len(lp) <= 3:
+            lp.append(None)
+        self.cbyuid[cuid].login = lp[3]
+        if lp[3]:
+            self.loginClient(self.cbyuid[cuid])
+        else:
+            self.logoutClient(self.cbyuid[cuid])
+
     def __init__(self):
         self.chans = {}
         self.sbysid = {}
@@ -94,6 +121,8 @@ class Conn(basic.LineReceiver):
         self.cbyuid = {}
         self.cbynick = {}
         self.msgs = {
+            'su': self.got_su,
+            'encap': self.got_encap,
             'sjoin': self.got_sjoin,
             'join': self.got_join,
             'svinfo': self.got_svinfo,
@@ -142,4 +171,10 @@ class Conn(basic.LineReceiver):
 
     # Extra interface stuff.
     def newClient(self, client):
+        pass
+
+    def loginClient(self, client):
+        pass
+
+    def logoutClient(self, client):
         pass

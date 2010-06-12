@@ -34,6 +34,9 @@ class IdoruConn(Conn):
     def newClient(self, client):
         print 'Idoru: client %s' % client.nick
 
+    def loginClient(self, client):
+        print 'Idoru: login %s %s' % (client.nick, client.login)
+
 class IdoruFactory(protocol.ClientFactory):
     protocol = IdoruConn
 

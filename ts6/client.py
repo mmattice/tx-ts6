@@ -25,6 +25,7 @@ class Client:
         self.gecos = kwargs.get('gecos', 'twisted-ts6 client')
         self.modes = kwargs.get('modes', 'oS')
         self.chans = []
+        self.login = None
         if 'uid' in kwargs.keys():
             self.uid = kwargs['uid']
         else:
