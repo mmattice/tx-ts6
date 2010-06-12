@@ -10,12 +10,12 @@ class Idoru(Client):
 class IdoruConn(Conn):
     def connectionMade(self):
         self.password = 'acceptpw'
-        self.sid = '90A'
+        self.sid = '90B'
         self.name = 'ts6.grixis.local'
         self.desc = 'twisted-ts6 test'
 
         Conn.connectionMade(self)
-        self.introduce(Idoru(self.me, 'idoru'))
+        self.introduce(Idoru(self, self.me, 'idoru'))
 
 class IdoruFactory(protocol.ClientFactory):
     protocol = IdoruConn

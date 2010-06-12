@@ -14,7 +14,8 @@ def mkuid():
     return ''.join([uidchars[x] for x in uid])
 
 class Client:
-    def __init__(self, server, nick, *args, **kwargs):
+    def __init__(self, conn, server, nick, *args, **kwargs):
+        self.conn = conn
         self.server = server
         self.nick = nick
         self.user = kwargs.get('user', 'twisted')
@@ -27,7 +28,11 @@ class Client:
             self.uid = mkuid()
         self.euid = server.sid + self.uid
 
-    def introduce(self, conn):
-        conn.sendLine(':%s EUID %s 1 %lu %s %s %s 0 %s * * :%s' %
-                      (conn.me.sid, self.nick, int(time.time()), self.modes,
-                       self.user, self.host, self.euid, self.gecos))
+    def sendLine(self, line):
+        self.conn.sendLine(line)
+
+    def introduce(self):
+        self.sendLine(':%s EUID %s 1 %lu %s %s %s 0 %s * * :%s' %
+                      (self.conn.me.sid, self.nick, int(time.time()),
+                      self.modes, self.user, self.host, self.euid,
+                      self.gecos))
