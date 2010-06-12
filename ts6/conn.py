@@ -4,6 +4,7 @@ import time
 from twisted.internet import reactor, protocol
 from twisted.protocols import basic
 
+from ts6.channel import Channel
 from ts6.client import Client
 from ts6.server import Server
 
@@ -45,12 +46,59 @@ class Conn(basic.LineReceiver):
         self.sbysid[lp[4]] = s
         self.sbyname[lp[2]] = s
 
+    # :sid SJOIN ts name modes :uid uid...
+    def got_sjoin(self, line):
+        lp = line.split(' ')
+        # XXX ignores all the SJOIN cleverness... very broken
+        h = self.chans.get(lp[3], None)
+        if not h:
+            h = Channel(lp[3], lp[4])
+        self.chans[lp[3]] = h
+        lp[5] = lp[5][1:]
+
+        for x in lp[5:]:
+            c = self.cbyuid[x[-9:]]
+            c.joined(h)
+            h.joined(c)
+
+    # :uid JOIN ts name +
+    def got_join(self, line):
+        lp = line.split(' ')
+        h = self.chans[lp[3]]
+        c = self.cbyuid[lp[0][1:]]
+        c.joined(h)
+        h.joined(c)
+
+    # PING :arg
+    # :sid PING arg :dest
+    def got_ping(self, line):
+        lp = line.split(' ')
+        if lp[0].lower() == 'ping':
+            self.sendLine('PONG %s' % lp[1])
+            return
+        farserv = self.sbysid[lp[0][1:]]
+        self.sendLine(':%s PONG %s :%s' % (self.me.sid, self.me.name, farserv.sid))
+
+    # SVINFO who cares
+    def got_svinfo(self, line):
+        pass
+
+    # NOTICE
+    def got_notice(self, line):
+        pass
+
     def __init__(self):
+        self.chans = {}
         self.sbysid = {}
         self.sbyname = {}
         self.cbyuid = {}
         self.cbynick = {}
         self.msgs = {
+            'sjoin': self.got_sjoin,
+            'join': self.got_join,
+            'svinfo': self.got_svinfo,
+            'notice': self.got_notice,
+            'ping': self.got_ping,
             'sid': self.got_sid,
             'euid': self.got_euid,
             'pass': self.got_pass,

@@ -5,7 +5,13 @@ from ts6.client import Client
 from ts6.server import Server
 
 class Idoru(Client):
-    pass
+    def introduce(self):
+        Client.introduce(self)
+        self.join('#test')
+
+    def userJoined(self, client, channel):
+        Client.userJoined(self, client, channel)
+        print 'Idoru: join %s %s' % (client.nick, channel.name)
 
 class IdoruConn(Conn):
     def connectionMade(self):
