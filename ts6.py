@@ -4,6 +4,8 @@ import time
 from twisted.internet import reactor, protocol
 from twisted.protocols import basic
 
+import ts6.client
+
 class TS6(basic.LineReceiver):
     delimiter = '\n'
     MAX_LENGTH = 16384
