@@ -14,7 +14,8 @@ class Conn(basic.LineReceiver):
 
     # incoming message handlers
 
-    # :sid EUID nick hops ts umode user host 0 uid * * :gecos
+    # 0    1    2    3    4  5     6    7             8 9   10   11      12
+    # :sid EUID nick hops ts umode user host(visible) 0 uid host account :gecos
     def got_euid(self, line):
         lp = line.split(' ', 13)
         s = self.sbysid[lp[0][1:]]
@@ -24,7 +25,8 @@ class Conn(basic.LineReceiver):
                    hiddenhost = lp[10],
                    gecos = lp[12][1:],
                    modes = lp[5],
-                   ts = int(lp[4])
+                   ts = int(lp[4]),
+                   account = lp[11],
                    )
         self.cbyuid[lp[9]] = c
         self.cbynick[lp[2].lower()] = c

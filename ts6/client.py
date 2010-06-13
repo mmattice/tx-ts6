@@ -27,6 +27,9 @@ class Client:
             self.hiddenhost = self.host
         self.gecos = kwargs.get('gecos', 'twisted-ts6 client')
         self.modes = kwargs.get('modes', 'oS')
+        self.account = kwargs.get('account', None)
+        if (self.account == '*'):
+            self.account = None
         self.ts = kwargs.get('ts', int(time.time()))
         self.chans = []
         self.login = None
