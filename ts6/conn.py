@@ -25,7 +25,7 @@ class Conn(basic.LineReceiver):
                      'modes': lp[5],
                      'ts': int(lp[4])})
         self.cbyuid[lp[9]] = c
-        self.cbynick[lp[2]] = c
+        self.cbynick[lp[2].lower()] = c
         self.newClient(c)
 
     # :uid NICK newnick :ts
@@ -35,7 +35,7 @@ class Conn(basic.LineReceiver):
         newnick = lp[2]
         c = self.cbyuid[uid]
         oldnick = c.nick
-        self.cbynick[newnick] = self.cbynick.pop(oldnick)
+        self.cbynick[newnick.lower()] = self.cbynick.pop(oldnick.lower())
         c.nick = newnick
         c.ts = int(lp[3][1:])
 
