@@ -65,6 +65,24 @@ class ServerState:
             self.nextuid[i] = 0
         return ''.join([self.uidchars[x] for x in uid])
 
+    def cleanNonLocal(self):
+        """ remove all clients and servers from local state """
+        for uid in self.cbyuid.keys():
+            if uid[:3] == self.sid:
+                continue
+            c = self.cbyuid[uid]
+            for h in c.chans:
+                h.parted(c, 'netsplit')
+                if len(h.clients) == 0:
+                    del(self.chans[h.name.lower()])
+            del(self.cbynick[c.nick.lower()])
+            del(self.cbyuid[uid])
+        for sid in self.sbysid.keys():
+            if sid == self.sid:
+                continue
+            s = self.sbysid[sid]
+            del(self.sbyname[s.name])
+            del(self.sbysid[sid])
 
 class IdoruFactory(protocol.ClientFactory):
     protocol = IdoruConn
@@ -74,6 +92,7 @@ class IdoruFactory(protocol.ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         print 'connection lost - %s' % (reason,)
+        self.state.cleanNonLocal()
         connector.connect()
 
 from twisted.internet import reactor
