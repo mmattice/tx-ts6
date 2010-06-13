@@ -27,6 +27,16 @@ class Conn(basic.LineReceiver):
         self.cbynick[lp[2]] = c
         self.newClient(c)
 
+    # :uid NICK newnick :ts
+    def got_nick(self, line):
+        lp = line.split(' ', 4)
+        uid = lp[0][1:]
+        newnick = lp[2]
+        c = self.cbyuid[uid]
+        oldnick = c.nick
+        self.cbynick[newnick] = self.cbynick.pop(oldnick)
+        c.nick = newnick
+
     # PASS theirpw TS 6 :sid
     def got_pass(self, line):
         lp = line.split(' ', 5)
@@ -130,6 +140,7 @@ class Conn(basic.LineReceiver):
             'ping': self.got_ping,
             'sid': self.got_sid,
             'euid': self.got_euid,
+            'nick': self.got_nick,
             'pass': self.got_pass,
             'server': self.got_server,
         }
