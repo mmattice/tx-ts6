@@ -18,7 +18,7 @@ class Conn(basic.LineReceiver):
     # :sid EUID nick hops ts umode user host(visible) 0 uid host account :gecos
     def got_euid(self, line):
         lp = line.split(' ', 13)
-        s = self.sbysid[lp[0][1:]]
+        s = self.state.sbysid[lp[0][1:]]
         c = Client(None, s, lp[2],
                    user = lp[6],
                    host = lp[7],
@@ -28,14 +28,14 @@ class Conn(basic.LineReceiver):
                    ts = int(lp[4]),
                    login = lp[11],
                    )
-        self.cbyuid[lp[9]] = c
-        self.cbynick[lp[2].lower()] = c
+        self.state.cbyuid[lp[9]] = c
+        self.state.cbynick[lp[2].lower()] = c
         self.newClient(c)
 
     # :sid UID nick hops ts modes user host ip uid :gecos
     def got_uid(self, line):
         lp = line.split(' ', 11)
-        s = self.sbysid[lp[0][1:]]
+        s = self.state.sbysid[lp[0][1:]]
         c = Client(None, s, lp[2],
                    user = lp[6],
                    host = lp[7],
@@ -43,27 +43,27 @@ class Conn(basic.LineReceiver):
                    modes = lp[5],
                    ts = int(lp[4]),
                    )
-        self.cbyuid[lp[9]] = c
-        self.cbynick[lp[2].lower()] = c
+        self.state.cbyuid[lp[9]] = c
+        self.state.cbynick[lp[2].lower()] = c
         self.newClient(c)
 
     # :20QAAAAAC QUIT :
     def got_quit(self, line):
         lp = line.split(' ', 3)
         uid = lp[0][1:]
-        c = self.cbyuid[uid]
+        c = self.state.cbyuid[uid]
         c.userQuit(c, lp[2][1:])
-        del(self.cbynick[c.nick.lower()])
-        del(self.cbyuid[uid])
+        del(self.state.cbynick[c.nick.lower()])
+        del(self.state.cbyuid[uid])
 
     # :uid NICK newnick :ts
     def got_nick(self, line):
         lp = line.split(' ', 4)
         uid = lp[0][1:]
         newnick = lp[2]
-        c = self.cbyuid[uid]
+        c = self.state.cbyuid[uid]
         oldnick = c.nick
-        self.cbynick[newnick.lower()] = self.cbynick.pop(oldnick.lower())
+        self.state.cbynick[newnick.lower()] = self.state.cbynick.pop(oldnick.lower())
         c.nick = newnick
         c.ts = int(lp[3][1:])
         c.identified = False
@@ -74,7 +74,7 @@ class Conn(basic.LineReceiver):
     def got_identified(self, line):
         lp = line.split(' ')
         uid = lp[2]
-        c = self.cbyuid[uid]
+        c = self.state.cbyuid[uid]
         if (len(lp) == 7) and (lp[-1] == ':OFF'):
             c.identified = False
         else:
@@ -89,36 +89,36 @@ class Conn(basic.LineReceiver):
     def got_server(self, line):
         lp = line.split(' ', 4)
         s = Server(self.farsid, lp[1], lp[3][1:])
-        self.sbysid[self.farsid] = s
-        self.sbyname[lp[1]] = s
+        self.state.sbysid[self.farsid] = s
+        self.state.sbyname[lp[1]] = s
 
     # :upsid SID name hops sid :gecos
     def got_sid(self, line):
         lp = line.split(' ', 6)
         s = Server(lp[4], lp[2], lp[5][1:])
-        self.sbysid[lp[4]] = s
-        self.sbyname[lp[2]] = s
+        self.state.sbysid[lp[4]] = s
+        self.state.sbyname[lp[2]] = s
 
     # :sid SJOIN ts name modes :uid uid...
     def got_sjoin(self, line):
         lp = line.split(' ')
         # XXX ignores all the SJOIN cleverness... very broken
-        h = self.chans.get(lp[3], None)
+        h = self.state.chans.get(lp[3], None)
         if not h:
             h = Channel(lp[3], lp[4])
-        self.chans[lp[3]] = h
+        self.state.chans[lp[3]] = h
         lp[5] = lp[5][1:]
 
         for x in lp[5:]:
-            c = self.cbyuid[x[-9:]]
+            c = self.state.cbyuid[x[-9:]]
             c.joined(h)
             h.joined(c)
 
     # :uid JOIN ts name +
     def got_join(self, line):
         lp = line.split(' ')
-        h = self.chans[lp[3]]
-        c = self.cbyuid[lp[0][1:]]
+        h = self.state.chans[lp[3]]
+        c = self.state.cbyuid[lp[0][1:]]
         c.joined(h)
         h.joined(c)
 
@@ -129,8 +129,8 @@ class Conn(basic.LineReceiver):
             msg = lp[3][1:]
         else:
             msg = ''
-        h = self.chans[lp[2]]
-        c = self.cbyuid[lp[0][1:]]
+        h = self.state.chans[lp[2]]
+        c = self.state.cbyuid[lp[0][1:]]
         c.parted(h)
         h.parted(c, msg)
 
@@ -141,7 +141,7 @@ class Conn(basic.LineReceiver):
         if lp[0].lower() == 'ping':
             self.sendLine('PONG %s' % lp[1])
             return
-        farserv = self.sbysid[lp[0][1:]]
+        farserv = self.state.sbysid[lp[0][1:]]
         self.sendLine(':%s PONG %s :%s' % (self.me.sid, self.me.name, farserv.sid))
 
     # SVINFO who cares
@@ -169,18 +169,11 @@ class Conn(basic.LineReceiver):
             cuid = cuid[1:]
         if len(lp) <= 3:
             lp.append(None)
-        self.cbyuid[cuid].login = lp[3]
+        self.state.cbyuid[cuid].login = lp[3]
         if lp[3]:
-            self.loginClient(self.cbyuid[cuid])
+            self.loginClient(self.state.cbyuid[cuid])
         else:
-            self.logoutClient(self.cbyuid[cuid])
-
-    def __init__(self):
-        self.chans = {}
-        self.sbysid = {}
-        self.sbyname = {}
-        self.cbyuid = {}
-        self.cbynick = {}
+            self.logoutClient(self.state.cbyuid[cuid])
 
     def introduce(self, obj):
         obj.introduce()

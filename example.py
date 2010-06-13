@@ -27,6 +27,7 @@ class IdoruConn(Conn):
         self.sid = '90B'
         self.name = 'ts6.grixis.local'
         self.desc = 'twisted-ts6 test'
+        self.state = self.factory.state
 
         Conn.connectionMade(self)
         self.introduce(Idoru(self, self.me, 'idoru'))
@@ -45,8 +46,17 @@ class IdoruConn(Conn):
     def loginClient(self, client):
         print 'Idoru: login %s %s' % (client.nick, client.login)
 
+class ServerState:
+    def __init__(self):
+        self.chans = {}
+        self.sbysid = {}
+        self.sbyname = {}
+        self.cbyuid = {}
+        self.cbynick = {}
+
 class IdoruFactory(protocol.ClientFactory):
     protocol = IdoruConn
+    state = ServerState()
 
     def clientConnectionLost(self, connector, reason):
         print 'connection lost - %s' % (reason,)

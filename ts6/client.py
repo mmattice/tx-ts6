@@ -55,10 +55,10 @@ class Client:
 
     # Commands.
     def join(self, channel, key = None):
-        tc = self.conn.chans.get(channel, None)
+        tc = self.conn.state.chans.get(channel, None)
         if not tc:
             tc = Channel(channel, 'nt')
-            self.conn.chans[channel] = tc
+            self.conn.state.chans[channel] = tc
         self.sendLine(':%s SJOIN %lu %s + :@%s' %
                       (self.server.sid, int(time.time()), channel, self.euid))
         self.joined(tc)
