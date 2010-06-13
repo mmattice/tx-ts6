@@ -182,14 +182,14 @@ class Conn(basic.LineReceiver):
 
     # Interface methods.
     def connectionMade(self):
-        self.me = Server(self.sid, self.name, self.desc)
+        self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
         self.register()
 
     def register(self):
         # hardcoded caps :D
-        self.sendLine("PASS %s TS 6 :%s" % (self.password, self.sid))
+        self.sendLine("PASS %s TS 6 :%s" % (self.password, self.state.sid))
         self.sendLine("CAPAB :QS EX IE KLN UNKLN ENCAP TB SERVICES EUID EOPMOD MLOCK")
-        self.sendLine("SERVER %s 1 :%s" % (self.name, self.desc))
+        self.sendLine("SERVER %s 1 :%s" % (self.state.servername, self.state.serverdesc))
         self.sendLine("SVINFO 6 3 0 :%lu" % int(time.time()))
 
     def sendLine(self, line):
