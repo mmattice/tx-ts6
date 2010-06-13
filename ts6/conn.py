@@ -19,11 +19,13 @@ class Conn(basic.LineReceiver):
         lp = line.split(' ', 13)
         s = self.sbysid[lp[0][1:]]
         c = Client(None, s, lp[2],
-                   { 'user': lp[6],
-                     'host': lp[7],
-                     'gecos': lp[12][1:],
-                     'modes': lp[5],
-                     'ts': int(lp[4])})
+                   user = lp[6],
+                   host = lp[7],
+                   hiddenhost = lp[10],
+                   gecos = lp[12][1:],
+                   modes = lp[5],
+                   ts = int(lp[4])
+                   )
         self.cbyuid[lp[9]] = c
         self.cbynick[lp[2].lower()] = c
         self.newClient(c)
