@@ -53,6 +53,18 @@ class ServerState:
         self.sbyname = {}
         self.cbyuid = {}
         self.cbynick = {}
+        self.nextuid = [ 0, 0, 0, 0, 0, 0 ]
+        self.uidchars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+    def mkuid(self):
+        uid = self.nextuid
+        for i in range(5, 0, -1):
+            if self.nextuid[i] != (ord('z') - ord('a') + 10):
+                self.nextuid[i] += 1
+                break
+            self.nextuid[i] = 0
+        return ''.join([self.uidchars[x] for x in uid])
+
 
 class IdoruFactory(protocol.ClientFactory):
     protocol = IdoruConn

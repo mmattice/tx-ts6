@@ -4,17 +4,6 @@ import time
 
 from ts6.channel import Channel
 
-nextuid = [ 0, 0, 0, 0, 0, 0 ]
-uidchars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-def mkuid():
-    uid = nextuid
-    for i in range(5, 0, -1):
-        if nextuid[i] != (ord('z') - ord('a') + 10):
-            nextuid[i] += 1
-            break
-        nextuid[i] = 0
-    return ''.join([uidchars[x] for x in uid])
-
 class Client:
     def __init__(self, conn, server, nick, *args, **kwargs):
         self.conn = conn
@@ -35,7 +24,7 @@ class Client:
         if 'uid' in kwargs.keys():
             self.uid = kwargs['uid']
         else:
-            self.uid = mkuid()
+            self.uid = self.conn.state.mkuid()
         self.euid = server.sid + self.uid
 
     def sendLine(self, line):

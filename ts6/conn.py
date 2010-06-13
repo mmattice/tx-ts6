@@ -27,6 +27,7 @@ class Conn(basic.LineReceiver):
                    modes = lp[5],
                    ts = int(lp[4]),
                    login = lp[11],
+                   uid = lp[9],
                    )
         self.state.cbyuid[lp[9]] = c
         self.state.cbynick[lp[2].lower()] = c
@@ -42,6 +43,7 @@ class Conn(basic.LineReceiver):
                    gecos = lp[10][1:],
                    modes = lp[5],
                    ts = int(lp[4]),
+                   uid = lp[9],
                    )
         self.state.cbyuid[lp[9]] = c
         self.state.cbynick[lp[2].lower()] = c
