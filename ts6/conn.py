@@ -47,6 +47,15 @@ class Conn(basic.LineReceiver):
         self.cbynick[lp[2].lower()] = c
         self.newClient(c)
 
+    # :20QAAAAAC QUIT :
+    def got_quit(self, line):
+        lp = line.split(' ', 3)
+        uid = lp[0][1:]
+        c = self.cbyuid[uid]
+        c.userQuit(c, lp[2][1:])
+        del(self.cbynick[c.nick.lower()])
+        del(self.cbyuid[uid])
+
     # :uid NICK newnick :ts
     def got_nick(self, line):
         lp = line.split(' ', 4)
@@ -176,6 +185,7 @@ class Conn(basic.LineReceiver):
             'sid': self.got_sid,
             'euid': self.got_euid,
             'uid': self.got_uid,
+            'quit': self.got_quit,
             'nick': self.got_nick,
             'pass': self.got_pass,
             'server': self.got_server,

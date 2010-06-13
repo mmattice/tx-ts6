@@ -64,3 +64,6 @@ class Client:
     # Hooks
     def userJoined(self, client, channel):
         pass
+
+    def userQuit(self, client, message):
+        pass
