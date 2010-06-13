@@ -22,7 +22,8 @@ class Conn(basic.LineReceiver):
                    { 'user': lp[6],
                      'host': lp[7],
                      'gecos': lp[12][1:],
-                     'modes': lp[5] })
+                     'modes': lp[5],
+                     'ts': int(lp[4])})
         self.cbyuid[lp[9]] = c
         self.cbynick[lp[2]] = c
         self.newClient(c)
@@ -36,6 +37,7 @@ class Conn(basic.LineReceiver):
         oldnick = c.nick
         self.cbynick[newnick] = self.cbynick.pop(oldnick)
         c.nick = newnick
+        c.ts = int(lp[3][1:])
 
     # PASS theirpw TS 6 :sid
     def got_pass(self, line):
