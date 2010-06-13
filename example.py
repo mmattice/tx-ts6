@@ -13,6 +13,10 @@ class Idoru(Client):
         Client.userJoined(self, client, channel)
         print 'Idoru: join %s %s' % (client.nick, channel.name)
 
+    def userParted(self, client, channel, message):
+        Client.userParted(self, client, channel, message)
+        print 'Idoru: part %s %s "%s"' % (client.nick, channel.name, message)
+
     def userQuit(self, client, message):
         Client.userQuit(self, client, message)
         print 'Idoru: quit %s "%s"' % (client.nick, message)

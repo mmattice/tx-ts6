@@ -122,6 +122,18 @@ class Conn(basic.LineReceiver):
         c.joined(h)
         h.joined(c)
 
+    # :20QAAAAAB PART #test :foo
+    def got_part(self, line):
+        lp = line.split(' ', 4)
+        if len(lp) == 4:
+            msg = lp[3][1:]
+        else:
+            msg = ''
+        h = self.chans[lp[2]]
+        c = self.cbyuid[lp[0][1:]]
+        c.parted(h)
+        h.parted(c, msg)
+
     # PING :arg
     # :sid PING arg :dest
     def got_ping(self, line):
@@ -179,6 +191,7 @@ class Conn(basic.LineReceiver):
             'encap': self.got_encap,
             'sjoin': self.got_sjoin,
             'join': self.got_join,
+            'part': self.got_part,
             'svinfo': self.got_svinfo,
             'notice': self.got_notice,
             'ping': self.got_ping,

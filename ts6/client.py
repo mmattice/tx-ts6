@@ -50,6 +50,9 @@ class Client:
     def joined(self, chan):
         self.chans.append(chan)
 
+    def parted(self, chan):
+        self.chans.remove(chan)
+
     # Commands.
     def join(self, channel, key = None):
         tc = self.conn.chans.get(channel, None)
@@ -63,6 +66,9 @@ class Client:
 
     # Hooks
     def userJoined(self, client, channel):
+        pass
+
+    def userParted(self, client, channel, message):
         pass
 
     def userQuit(self, client, message):

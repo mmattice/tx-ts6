@@ -13,3 +13,10 @@ class Channel:
             if not c.conn:
                 continue
             c.userJoined(client, self)
+
+    def parted(self, client, message):
+        self.clients.remove(client)
+        for c in self.clients:
+            if not c.conn:
+                continue
+            c.userParted(client, self, message)
