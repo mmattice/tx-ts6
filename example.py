@@ -32,7 +32,7 @@ class IdoruConn(Conn):
         Conn.lineReceived(self, line)
 
     def newClient(self, client):
-        print 'Idoru: client %s identified as %s' % (client.nick, client.account)
+        print 'Idoru: client %s identified as %s' % (client.nick, client.login)
 
     def loginClient(self, client):
         print 'Idoru: login %s %s' % (client.nick, client.login)

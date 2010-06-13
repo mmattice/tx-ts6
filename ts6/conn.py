@@ -26,7 +26,7 @@ class Conn(basic.LineReceiver):
                    gecos = lp[12][1:],
                    modes = lp[5],
                    ts = int(lp[4]),
-                   account = lp[11],
+                   login = lp[11],
                    )
         self.cbyuid[lp[9]] = c
         self.cbynick[lp[2].lower()] = c
