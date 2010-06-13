@@ -48,6 +48,10 @@ class IdoruConn(Conn):
 class IdoruFactory(protocol.ClientFactory):
     protocol = IdoruConn
 
+    def clientConnectionLost(self, connector, reason):
+        print 'connection lost - %s' % (reason,)
+        connector.connect()
+
 from twisted.internet import reactor
 reactor.connectTCP('localhost', 5000, IdoruFactory())
 reactor.run()
