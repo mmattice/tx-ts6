@@ -22,6 +22,9 @@ class Client:
         self.nick = nick
         self.user = kwargs.get('user', 'twisted')
         self.host = kwargs.get('host', server.name)
+        self.hiddenhost = kwargs.get('hiddenhost', server.name)
+        if self.hiddenhost == '*':
+            self.hiddenhost = self.host
         self.gecos = kwargs.get('gecos', 'twisted-ts6 client')
         self.modes = kwargs.get('modes', 'oS')
         self.ts = kwargs.get('ts', int(time.time()))
