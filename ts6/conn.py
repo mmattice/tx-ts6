@@ -42,6 +42,19 @@ class Conn(basic.LineReceiver):
         self.cbynick[newnick.lower()] = self.cbynick.pop(oldnick.lower())
         c.nick = newnick
         c.ts = int(lp[3][1:])
+        c.identified = False
+
+    # :00A ENCAP * IDENTIFIED euid nick :OFF
+    # :00A ENCAP * IDENTIFIED euid :nick
+    # :00A IDENTIFIED euid :nick
+    def got_identified(self, line):
+        lp = line.split(' ')
+        uid = lp[2]
+        c = self.cbyuid[uid]
+        if (len(lp) == 7) and (lp[-1] == ':OFF'):
+            c.identified = False
+        else:
+            c.identified = True
 
     # PASS theirpw TS 6 :sid
     def got_pass(self, line):
@@ -138,6 +151,7 @@ class Conn(basic.LineReceiver):
         self.cbynick = {}
         self.msgs = {
             'su': self.got_su,
+            'identified': self.got_identified,
             'encap': self.got_encap,
             'sjoin': self.got_sjoin,
             'join': self.got_join,
