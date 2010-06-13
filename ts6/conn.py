@@ -157,11 +157,7 @@ class Conn(basic.LineReceiver):
     def got_encap(self, line):
         lp = line.split(' ', 4)
         newline = '%s %s %s' % (lp[0], lp[3], lp[4])
-        cmd = lp[3].lower()
-        if cmd not in self.msgs:
-            print 'Unhandled ENCAP: %s' % line
-            return
-        self.msgs[cmd](newline)
+        self.dispatch(lp[3], newline)
 
     # SU
     # :sid SU uid account
@@ -185,24 +181,6 @@ class Conn(basic.LineReceiver):
         self.sbyname = {}
         self.cbyuid = {}
         self.cbynick = {}
-        self.msgs = {
-            'su': self.got_su,
-            'identified': self.got_identified,
-            'encap': self.got_encap,
-            'sjoin': self.got_sjoin,
-            'join': self.got_join,
-            'part': self.got_part,
-            'svinfo': self.got_svinfo,
-            'notice': self.got_notice,
-            'ping': self.got_ping,
-            'sid': self.got_sid,
-            'euid': self.got_euid,
-            'uid': self.got_uid,
-            'quit': self.got_quit,
-            'nick': self.got_nick,
-            'pass': self.got_pass,
-            'server': self.got_server,
-        }
 
     def introduce(self, obj):
         obj.introduce()
@@ -225,6 +203,13 @@ class Conn(basic.LineReceiver):
     def dataReceived(self, data):
         basic.LineReceiver.dataReceived(self, data.replace('\r', ''))
 
+    def dispatch(self, cmd, line):
+        method = getattr(self, 'got_%s' % cmd.lower(), None)
+        if method is not None:
+            method(line)
+        else:
+            print 'Unhandled msg: %s' % line
+
     def lineReceived(self, line):
         lp = line.split()
         if lp[0].lower() == 'ping':
@@ -234,10 +219,7 @@ class Conn(basic.LineReceiver):
             lk = lp[0]
         else:
             lk = lp[1]
-        if lk.lower() not in self.msgs:
-            print 'Unhandled msg: %s' % line
-            return
-        self.msgs[lk.lower()](line)
+        self.dispatch(lk, line)
 
     # Extra interface stuff.
     def newClient(self, client):
