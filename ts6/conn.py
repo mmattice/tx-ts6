@@ -32,6 +32,21 @@ class Conn(basic.LineReceiver):
         self.cbynick[lp[2].lower()] = c
         self.newClient(c)
 
+    # :sid UID nick hops ts modes user host ip uid :gecos
+    def got_uid(self, line):
+        lp = line.split(' ', 11)
+        s = self.sbysid[lp[0][1:]]
+        c = Client(None, s, lp[2],
+                   user = lp[6],
+                   host = lp[7],
+                   gecos = lp[10][1:],
+                   modes = lp[5],
+                   ts = int(lp[4]),
+                   )
+        self.cbyuid[lp[9]] = c
+        self.cbynick[lp[2].lower()] = c
+        self.newClient(c)
+
     # :uid NICK newnick :ts
     def got_nick(self, line):
         lp = line.split(' ', 4)
@@ -160,6 +175,7 @@ class Conn(basic.LineReceiver):
             'ping': self.got_ping,
             'sid': self.got_sid,
             'euid': self.got_euid,
+            'uid': self.got_uid,
             'nick': self.got_nick,
             'pass': self.got_pass,
             'server': self.got_server,
