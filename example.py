@@ -22,7 +22,7 @@ class Idoru(Client):
         Client.userQuit(self, client, message)
         print 'Idoru: quit %s "%s"' % (client.nick, message)
 
-class IdoruConn(Conn):
+class IrcdConn(Conn):
     def connectionMade(self):
         self.password = 'acceptpw'
         self.state = self.factory.state
@@ -39,13 +39,13 @@ class IdoruConn(Conn):
         Conn.lineReceived(self, line)
 
     def newClient(self, client):
-        print 'Idoru: client %s identified as %s' % (client.nick, client.login)
+        print 'twisted-seven: client %s identified as %s' % (client.nick, client.login)
 
     def loginClient(self, client):
-        print 'Idoru: login %s %s' % (client.nick, client.login)
+        print 'twisted-seven: login %s %s' % (client.nick, client.login)
 
-class IdoruFactory(protocol.ClientFactory):
-    protocol = IdoruConn
+class IrcdFactory(protocol.ClientFactory):
+    protocol = IrcdConn
     state = ServerState()
     state.sid = '90B'
     state.servername = 'ts6.grixis.local'
@@ -56,5 +56,5 @@ class IdoruFactory(protocol.ClientFactory):
         connector.connect()
 
 from twisted.internet import reactor
-reactor.connectTCP('localhost', 5000, IdoruFactory())
+reactor.connectTCP('localhost', 5000, IrcdFactory())
 reactor.run()
