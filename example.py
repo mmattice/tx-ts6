@@ -39,6 +39,12 @@ class TestIrcdConn(IrcdConn):
     def loginClient(self, client):
         print 'twisted-seven: login %s %s' % (client.nick, client.login)
 
+    def burstStart(self):
+        print 'twisted-seven: burst starting'
+
+    def burstEnd(self):
+        print 'twisted-seven: burst over'
+
 class TestIrcdFactory(IrcdFactory):
     protocol = TestIrcdConn
 

@@ -184,6 +184,8 @@ class Conn(basic.LineReceiver):
     def connectionMade(self):
         self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
         self.register()
+        self.bursting = True
+        self.burstStart()
 
     def register(self):
         # hardcoded caps :D
@@ -209,6 +211,9 @@ class Conn(basic.LineReceiver):
         lp = line.split()
         if lp[0].lower() == 'ping':
             self.sendLine('PONG %s' % lp[1])
+            if self.bursting:
+                self.burstEnd()
+                self.bursting = False
             return
         if lp[0][0] != ':':
             lk = lp[0]
@@ -224,4 +229,10 @@ class Conn(basic.LineReceiver):
         pass
 
     def logoutClient(self, client):
+        pass
+
+    def burstStart(self):
+        pass
+
+    def burstEnd(self):
         pass
