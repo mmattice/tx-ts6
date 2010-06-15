@@ -1,5 +1,5 @@
 from ts6.client import Client
-from ts6.ircd import IrcdFactory
+from ts6.ircd import IrcdFactory, IrcdConn
 
 class Idoru(Client):
     def introduce(self):
@@ -18,10 +18,38 @@ class Idoru(Client):
         Client.userQuit(self, client, message)
         print 'Idoru: quit %s "%s"' % (client.nick, message)
 
+class TestIrcdConn(IrcdConn):
+    password = 'acceptpw'
+
+    def connectionMade(self):
+        IrcdConn.connectionMade(self)
+        self.introduce(Idoru(self, self.me, 'idoru'))
+
+    def sendLine(self, line):
+        IrcdConn.sendLine(self,line)
+        print '-> %s' % line
+
+    def lineReceived(self, line):
+        print '<- %s' % line
+        IrcdConn.lineReceived(self, line)
+
+    def newClient(self, client):
+        print 'twisted-seven: client %s identified as %s' % (client.nick, client.login)
+
+    def loginClient(self, client):
+        print 'twisted-seven: login %s %s' % (client.nick, client.login)
+
 class TestIrcdFactory(IrcdFactory):
+    protocol = TestIrcdConn
+
     def __init__(self):
         self.state.sid = '90B'
         self.state.servername = 'ts6.grixis.local'
+
+    def clientConnectionLost(self, connector, reason):
+        print 'connection lost - %s' % (reason,)
+        self.state.cleanNonLocal()
+        connector.connect()
 
 
 from twisted.internet import reactor
