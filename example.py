@@ -34,7 +34,7 @@ class TestIrcdConn(IrcdConn):
         IrcdConn.lineReceived(self, line)
 
     def newClient(self, client):
-        print 'twisted-seven: client %s identified as %s' % (client.nick, client.login)
+        print 'twisted-seven: client %s identified as %s' % (client, client.login)
 
     def loginClient(self, client):
         print 'twisted-seven: login %s %s' % (client.nick, client.login)

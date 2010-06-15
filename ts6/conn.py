@@ -101,17 +101,44 @@ class Conn(basic.LineReceiver):
         self.state.sbysid[lp[4]] = s
         self.state.sbyname[lp[2]] = s
 
-    # :sid SJOIN ts name modes :uid uid...
+    # :sid SJOIN ts name modes [args...] :uid uid...
     def got_sjoin(self, line):
         lp = line.split(' ')
-        # XXX ignores all the SJOIN cleverness... very broken
-        h = self.state.chans.get(lp[3], None)
-        if not h:
-            h = Channel(lp[3], lp[4])
-        self.state.chans[lp[3]] = h
-        lp[5] = lp[5][1:]
+        src = self.findsrc(lp[0][1:])
+        (ts, name) = (int(lp[2]), lp[3])
 
-        for x in lp[5:]:
+        modes = []
+        uids = lp[4:]
+        while uids:
+            m = uids[0]
+            if m[0] == ':':
+                break
+            modes.append(m)
+            uids = uids[1:]
+
+        h = self.state.chans.get(name, None)
+
+        if (h and ts < h.ts):
+            # Oops. One of our clients joined a preexisting but split channel
+            # and now the split's being healed. Time to do the TS change dance!
+            h.tschange(ts, modes)
+
+        elif (h and ts == h.ts):
+            # Merge both sets of modes, since this is 'the same' channel.
+            h.modeset(src, modes)
+
+        elif (h and ts > h.ts):
+            # Disregard incoming modes altogether; just use their client list.
+            # The far side will take care of kicking remote splitriders if need
+            # be.
+            pass
+
+        if not h:
+            h = Channel(name, modes, ts)
+            self.state.chans[name] = h
+
+        uids[0] = uids[0][1:]
+        for x in uids:
             c = self.state.cbyuid[x[-9:]]
             c.joined(h)
             h.joined(c)
@@ -177,6 +204,39 @@ class Conn(basic.LineReceiver):
         else:
             self.logoutClient(self.state.cbyuid[cuid])
 
+    # :sid MODE uid :+modes
+    # :uid MODE uid :+modes
+    # charybdis doesn't seem to use the latter two, but I think they're
+    # technically legal (charybdis just seems to always use TMODE instead)
+    # :sid MODE channel :+modes
+    # :uid MODE channel :+modes
+    def got_mode(self, line):
+        lp = line.split(' ', 4)
+        modes = lp[3][1:]
+        src = self.findsrc(lp[0][1:])
+        if lp[2][0] == '#':
+            dest = self.state.chans[lp[2]]
+        else:
+            dest = self.state.cbyuid[lp[2]]
+        dest.modeset(src, modes)
+
+    # :sid TMODE ts channel +modes
+    # :uid TMODE ts channel +modes
+    # yes, TMODE really does not use a ':' before the modes arg.
+    def got_tmode(self, line):
+        lp = line.split(' ', 5)
+        modes = lp[4]
+        src = self.findsrc(lp[0][1:])
+        ts = int(lp[2])
+        dest = self.state.chans[lp[3]]
+        # We have to discard higher-TS TMODEs because they come from a newer
+        # version of the channel.
+        if ts > dest.ts:
+            print 'TMODE: ignoring higher TS mode %s to %s from %s (%d > %d)' % (
+                  modes, dest, src, ts, dest.ts)
+            return
+        dest.modeset(src, modes)
+
     def introduce(self, obj):
         obj.introduce()
 
@@ -193,6 +253,23 @@ class Conn(basic.LineReceiver):
         self.sendLine("CAPAB :QS EX IE KLN UNKLN ENCAP TB SERVICES EUID EOPMOD MLOCK")
         self.sendLine("SERVER %s 1 :%s" % (self.state.servername, self.state.serverdesc))
         self.sendLine("SVINFO 6 3 0 :%lu" % int(time.time()))
+
+    # Utility methods
+
+    # findsrc : string -> client-or-server
+    # findsrc tries to interpret the provided source in any possible way - first
+    # as a SID, then a UID, then maybe a servername, then maybe a nickname.
+    def findsrc(self, src):
+        if len(src) == 3 and src[0].isdigit() and src.find('.') == -1:
+            return self.state.sbysid[src]
+        elif len(src) == 9 and src[0].isdigit() and src.find('.') == -1:
+            return self.state.cbyuid[src]
+        elif src.find('.') != -1:
+            return self.state.sbyname[src]
+        else:
+            return self.state.cbynick[src]
+
+    # Some events
 
     def sendLine(self, line):
         basic.LineReceiver.sendLine(self, line + '\r')

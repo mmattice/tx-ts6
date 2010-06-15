@@ -27,6 +27,9 @@ class Client:
             self.uid = self.conn.state.mkuid()
         self.euid = server.sid + self.uid
 
+    def __str__(self):
+        return '%s:%s!%s@%s' % (self.euid, self.nick, self.user, self.host)
+
     def sendLine(self, line):
         self.conn.sendLine(line)
 
@@ -42,14 +45,17 @@ class Client:
     def parted(self, chan):
         self.chans.remove(chan)
 
+    def modeset(self, src, modes):
+        print 'client %s modes: %s' % (self.euid, modes)
+
     # Commands.
     def join(self, channel, key = None):
         tc = self.conn.state.chans.get(channel, None)
         if not tc:
-            tc = Channel(channel, 'nt')
+            tc = Channel(channel, 'nt', int(time.time()))
             self.conn.state.chans[channel] = tc
         self.sendLine(':%s SJOIN %lu %s + :@%s' %
-                      (self.server.sid, int(time.time()), channel, self.euid))
+                      (self.server.sid, tc.ts, channel, self.euid))
         self.joined(tc)
         tc.joined(self)
 
