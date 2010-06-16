@@ -108,26 +108,27 @@ class Conn(basic.LineReceiver):
             modes.append(m)
             uids = uids[1:]
 
-        h = self.state.chans.get(name, None)
+        h = self.state.chans.get(name.lower(), None)
 
-        if (h and ts < h.ts):
-            # Oops. One of our clients joined a preexisting but split channel
-            # and now the split's being healed. Time to do the TS change dance!
-            h.tschange(ts, modes)
+        if h:
+            if (ts < h.ts):
+                # Oops. One of our clients joined a preexisting but split channel
+                # and now the split's being healed. Time to do the TS change dance!
+                h.tschange(ts, modes)
 
-        elif (h and ts == h.ts):
-            # Merge both sets of modes, since this is 'the same' channel.
-            h.modeset(src, modes)
+            elif (ts == h.ts):
+                # Merge both sets of modes, since this is 'the same' channel.
+                h.modeset(src, modes)
 
-        elif (h and ts > h.ts):
-            # Disregard incoming modes altogether; just use their client list.
-            # The far side will take care of kicking remote splitriders if need
-            # be.
-            pass
+            elif (ts > h.ts):
+                # Disregard incoming modes altogether; just use their client list.
+                # The far side will take care of kicking remote splitriders if need
+                # be.
+                pass
 
-        if not h:
+        else:
             h = Channel(name, modes, ts)
-            self.state.chans[name] = h
+            self.state.chans[name.lower()] = h
 
         uids[0] = uids[0][1:]
         for x in uids:
