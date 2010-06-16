@@ -39,3 +39,40 @@ class ServerState:
             del(self.sbyname[s.name])
             del(self.sbysid[sid])
 
+    def Client(self, uid):
+        return self.cbyuid[uid]
+
+    def addClient(self, client):
+        self.cbyuid[client.uid] = client
+        self.cbynick[client.nick.lower()] = client
+
+    def delClient(self, client = None, uid = None):
+        if client:
+            uid = client.uid
+        del(self.cbynick[client.nick.lower()])
+        del(self.cbyuid[uid])
+
+    def NickChange(self, uid, newnick, ts):
+        c = self.Client(uid)
+        oldnick = c.nick
+        self.cbynick[newnick.lower()] = self.cbynick.pop(oldnick.lower())
+        c.nick = newnick
+        c.ts = ts
+        c.identified = False
+
+    def Join(self, uid, channel):
+        h = self.chans[channel.lower()]
+        c = self.Client(uid)
+        c.joined(h)
+        h.joined(c)
+
+    def Part(self, uid, channel, msg):
+        h = self.chans[channel]
+        c = self.Client(uid)
+        c.parted(h)
+        h.parted(c, msg)
+
+
+    def addServer(self, server):
+        self.sbysid[server.sid] = server
+        self.sbyname[server.name] = server

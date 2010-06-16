@@ -29,8 +29,7 @@ class Conn(basic.LineReceiver):
                    login = lp[11],
                    uid = lp[9],
                    )
-        self.state.cbyuid[lp[9]] = c
-        self.state.cbynick[lp[2].lower()] = c
+        self.state.addClient(c)
         self.newClient(c)
 
     # :sid UID nick hops ts modes user host ip uid :gecos
@@ -45,30 +44,24 @@ class Conn(basic.LineReceiver):
                    ts = int(lp[4]),
                    uid = lp[9],
                    )
-        self.state.cbyuid[lp[9]] = c
-        self.state.cbynick[lp[2].lower()] = c
+        self.state.addClient(c)
         self.newClient(c)
 
     # :20QAAAAAC QUIT :
     def got_quit(self, line):
         lp = line.split(' ', 3)
         uid = lp[0][1:]
-        c = self.state.cbyuid[uid]
+        c = self.state.Client(uid)
         c.userQuit(c, lp[2][1:])
-        del(self.state.cbynick[c.nick.lower()])
-        del(self.state.cbyuid[uid])
+        self.state.delClient(c)
 
     # :uid NICK newnick :ts
     def got_nick(self, line):
         lp = line.split(' ', 4)
         uid = lp[0][1:]
         newnick = lp[2]
-        c = self.state.cbyuid[uid]
-        oldnick = c.nick
-        self.state.cbynick[newnick.lower()] = self.state.cbynick.pop(oldnick.lower())
-        c.nick = newnick
-        c.ts = int(lp[3][1:])
-        c.identified = False
+        ts = int(lp[3][1:])
+        self.state.NickChange(uid, newnick, ts)
 
     # :00A ENCAP * IDENTIFIED euid nick :OFF
     # :00A ENCAP * IDENTIFIED euid :nick
@@ -76,7 +69,7 @@ class Conn(basic.LineReceiver):
     def got_identified(self, line):
         lp = line.split(' ')
         uid = lp[2]
-        c = self.state.cbyuid[uid]
+        c = self.state.Client(uid)
         if (len(lp) == 7) and (lp[-1] == ':OFF'):
             c.identified = False
         else:
@@ -98,8 +91,7 @@ class Conn(basic.LineReceiver):
     def got_sid(self, line):
         lp = line.split(' ', 6)
         s = Server(lp[4], lp[2], lp[5][1:])
-        self.state.sbysid[lp[4]] = s
-        self.state.sbyname[lp[2]] = s
+        self.state.addServer(s)
 
     # :sid SJOIN ts name modes [args...] :uid uid...
     def got_sjoin(self, line):
@@ -139,17 +131,14 @@ class Conn(basic.LineReceiver):
 
         uids[0] = uids[0][1:]
         for x in uids:
-            c = self.state.cbyuid[x[-9:]]
-            c.joined(h)
-            h.joined(c)
+            self.state.Join(x[-9:], name)
 
     # :uid JOIN ts name +
     def got_join(self, line):
         lp = line.split(' ')
-        h = self.state.chans[lp[3]]
-        c = self.state.cbyuid[lp[0][1:]]
-        c.joined(h)
-        h.joined(c)
+        channel = lp[3]
+        uid = lp[0][1:]
+        self.state.Join(uid, channel)
 
     # :20QAAAAAB PART #test :foo
     def got_part(self, line):
@@ -158,10 +147,9 @@ class Conn(basic.LineReceiver):
             msg = lp[3][1:]
         else:
             msg = ''
-        h = self.state.chans[lp[2]]
-        c = self.state.cbyuid[lp[0][1:]]
-        c.parted(h)
-        h.parted(c, msg)
+        uid = lp[0][1:]
+        channel = lp[2]
+        self.state.Part(uid, channel, msg)
 
     # PING :arg
     # :sid PING arg :dest
@@ -198,11 +186,11 @@ class Conn(basic.LineReceiver):
             cuid = cuid[1:]
         if len(lp) <= 3:
             lp.append(None)
-        self.state.cbyuid[cuid].login = lp[3]
+        self.state.Client(cuid).login = lp[3]
         if lp[3]:
-            self.loginClient(self.state.cbyuid[cuid])
+            self.loginClient(self.state.Client(cuid))
         else:
-            self.logoutClient(self.state.cbyuid[cuid])
+            self.logoutClient(self.state.Client(cuid))
 
     # :sid MODE uid :+modes
     # :uid MODE uid :+modes
@@ -217,7 +205,7 @@ class Conn(basic.LineReceiver):
         if lp[2][0] == '#':
             dest = self.state.chans[lp[2]]
         else:
-            dest = self.state.cbyuid[lp[2]]
+            dest = self.state.Client(lp[2])
         dest.modeset(src, modes)
 
     # :sid TMODE ts channel +modes
@@ -263,7 +251,7 @@ class Conn(basic.LineReceiver):
         if len(src) == 3 and src[0].isdigit() and src.find('.') == -1:
             return self.state.sbysid[src]
         elif len(src) == 9 and src[0].isdigit() and src.find('.') == -1:
-            return self.state.cbyuid[src]
+            return self.state.Client(src)
         elif src.find('.') != -1:
             return self.state.sbyname[src]
         else:
