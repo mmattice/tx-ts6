@@ -59,6 +59,10 @@ class Conn(basic.LineReceiver):
         ts = int(suffix)
         self.state.NickChange(uid, newnick, ts)
 
+    def got_away(self, lp, suffix):
+        uid = lp[0][1:]
+        self.state.Away(uid, suffix)
+
     # :00A ENCAP * IDENTIFIED euid nick :OFF
     # :00A ENCAP * IDENTIFIED euid :nick
     # :00A IDENTIFIED euid :nick

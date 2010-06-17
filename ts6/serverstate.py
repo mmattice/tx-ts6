@@ -72,6 +72,9 @@ class ServerState:
         c.parted(h)
         h.parted(c, msg)
 
+    def Away(self, uid, msg):
+        c = self.Client(uid)
+        c.away = msg
 
     def addServer(self, server):
         self.sbysid[server.sid] = server
