@@ -24,11 +24,11 @@ class Client:
         if 'uid' in kwargs.keys():
             self.uid = kwargs['uid']
         else:
-            self.uid = self.conn.state.mkuid()
-        self.euid = server.sid + self.uid
+            self.uid = server.sid + self.conn.state.mkuid()
+        print "registered Client %s" % self
 
     def __str__(self):
-        return '%s:%s!%s@%s' % (self.euid, self.nick, self.user, self.host)
+        return '%s:%s!%s@%s' % (self.uid, self.nick, self.user, self.host)
 
     def sendLine(self, line):
         self.conn.sendLine(line)
@@ -36,7 +36,7 @@ class Client:
     def introduce(self):
         self.sendLine(':%s EUID %s 1 %lu %s %s %s 0 %s * * :%s' %
                       (self.conn.me.sid, self.nick, int(time.time()),
-                      self.modes, self.user, self.host, self.euid,
+                      self.modes, self.user, self.host, self.uid,
                       self.gecos))
 
     def joined(self, chan):
@@ -46,7 +46,7 @@ class Client:
         self.chans.remove(chan)
 
     def modeset(self, src, modes):
-        print 'client %s modes: %s' % (self.euid, modes)
+        print 'client %s modes: %s' % (self.uid, modes)
 
     # Commands.
     def join(self, channel, key = None):
@@ -55,7 +55,7 @@ class Client:
             tc = Channel(channel, 'nt', int(time.time()))
             self.conn.state.chans[channel] = tc
         self.sendLine(':%s SJOIN %lu %s + :@%s' %
-                      (self.server.sid, tc.ts, channel, self.euid))
+                      (self.server.sid, tc.ts, channel, self.uid))
         self.joined(tc)
         tc.joined(self)
 
