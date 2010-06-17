@@ -159,6 +159,12 @@ class Conn(basic.LineReceiver):
     def got_notice(self, lp, suffix):
         pass
 
+    def got_privmsg(self, lp, message):
+        source = self.uidorchan(lp[0][1:])
+        dest = self.uidorchan(lp[2])
+        print "privmsg from %s to %s - %s" % (source, dest, message)
+        dest.privmsg(source, dest, message)
+
     # ENCAP, argh.
     # :src ENCAP * <cmd [args...]>
     def got_encap(self, line):
@@ -241,6 +247,12 @@ class Conn(basic.LineReceiver):
             return self.state.sbyname[src]
         else:
             return self.state.cbynick[src]
+
+    def uidorchan(self, dst):
+        if dst[0] == '#':
+            return self.state.chans[dst.lower()]
+        else:
+            return self.state.Client(dst)
 
     # Some events
 

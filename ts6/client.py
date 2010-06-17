@@ -68,3 +68,6 @@ class Client:
 
     def userQuit(self, client, message):
         pass
+
+    def privmsg(self, source, dest, message):
+        pass

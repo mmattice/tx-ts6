@@ -30,3 +30,7 @@ class Channel:
 
     def __str__(self):
         return self.name
+
+    def privmsg(self, source, dest, message):
+        """ distribute messages to local clients """
+        pass
