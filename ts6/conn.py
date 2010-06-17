@@ -211,6 +211,7 @@ class Conn(basic.LineReceiver):
 
     def introduce(self, obj):
         obj.introduce()
+        self.state.addClient(obj)
 
     # Interface methods.
     def connectionMade(self):
