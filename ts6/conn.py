@@ -16,14 +16,13 @@ class Conn(basic.LineReceiver):
 
     # 0    1    2    3    4  5     6    7             8 9   10   11      12
     # :sid EUID nick hops ts umode user host(visible) 0 uid host account :gecos
-    def got_euid(self, line):
-        lp = line.split(' ', 13)
+    def got_euid(self, lp, suffix):
         s = self.state.sbysid[lp[0][1:]]
         c = Client(None, s, lp[2],
                    user = lp[6],
                    host = lp[7],
                    hiddenhost = lp[10],
-                   gecos = lp[12][1:],
+                   gecos = suffix,
                    modes = lp[5],
                    ts = int(lp[4]),
                    login = lp[11],
@@ -33,13 +32,12 @@ class Conn(basic.LineReceiver):
         self.newClient(c)
 
     # :sid UID nick hops ts modes user host ip uid :gecos
-    def got_uid(self, line):
-        lp = line.split(' ', 11)
+    def got_uid(self, lp, suffix):
         s = self.state.sbysid[lp[0][1:]]
         c = Client(None, s, lp[2],
                    user = lp[6],
                    host = lp[7],
-                   gecos = lp[10][1:],
+                   gecos = suffix,
                    modes = lp[5],
                    ts = int(lp[4]),
                    uid = lp[9],
@@ -47,60 +45,51 @@ class Conn(basic.LineReceiver):
         self.state.addClient(c)
         self.newClient(c)
 
-    # :20QAAAAAC QUIT :
-    def got_quit(self, line):
-        lp = line.split(' ', 3)
+    # :uid QUIT :
+    def got_quit(self, lp, suffix):
         uid = lp[0][1:]
         c = self.state.Client(uid)
-        c.userQuit(c, lp[2][1:])
+        c.userQuit(c, suffix)
         self.state.delClient(c)
 
     # :uid NICK newnick :ts
-    def got_nick(self, line):
-        lp = line.split(' ', 4)
+    def got_nick(self, lp, suffix):
         uid = lp[0][1:]
         newnick = lp[2]
-        ts = int(lp[3][1:])
+        ts = int(suffix)
         self.state.NickChange(uid, newnick, ts)
 
     # :00A ENCAP * IDENTIFIED euid nick :OFF
     # :00A ENCAP * IDENTIFIED euid :nick
     # :00A IDENTIFIED euid :nick
-    def got_identified(self, line):
-        lp = line.split(' ')
+    def got_identified(self, lp, suffix):
         uid = lp[2]
         c = self.state.Client(uid)
-        if (len(lp) == 7) and (lp[-1] == ':OFF'):
-            c.identified = False
-        else:
-            c.identified = True
+        c.identified = not ((len(lp) == 3) and (suffix == 'OFF'))
 
     # PASS theirpw TS 6 :sid
-    def got_pass(self, line):
-        lp = line.split(' ', 5)
-        self.farsid = lp[4][1:]
+    def got_pass(self, lp, suffix):
+        self.farsid = suffix
 
     # SERVER name hops :gecos
-    def got_server(self, line):
-        lp = line.split(' ', 4)
-        s = Server(self.farsid, lp[1], lp[3][1:])
+    def got_server(self, lp, suffix):
+        s = Server(self.farsid, lp[1], suffix)
+        print "Server created: %s" % s
         self.state.sbysid[self.farsid] = s
         self.state.sbyname[lp[1]] = s
 
     # :upsid SID name hops sid :gecos
-    def got_sid(self, line):
-        lp = line.split(' ', 6)
-        s = Server(lp[4], lp[2], lp[5][1:])
+    def got_sid(self, lp, suffix):
+        s = Server(lp[4], lp[2], suffix)
         self.state.addServer(s)
 
     # :sid SJOIN ts name modes [args...] :uid uid...
-    def got_sjoin(self, line):
-        lp = line.split(' ')
+    def got_sjoin(self, lp, suffix):
         src = self.findsrc(lp[0][1:])
         (ts, name) = (int(lp[2]), lp[3])
 
         modes = []
-        uids = lp[4:]
+        uids = suffix.split(' ')
         while uids:
             m = uids[0]
             if m[0] == ':':
@@ -130,22 +119,19 @@ class Conn(basic.LineReceiver):
             h = Channel(name, modes, ts)
             self.state.chans[name.lower()] = h
 
-        uids[0] = uids[0][1:]
         for x in uids:
             self.state.Join(x[-9:], name)
 
     # :uid JOIN ts name +
-    def got_join(self, line):
-        lp = line.split(' ')
+    def got_join(self, lp, suffix):
         channel = lp[3]
         uid = lp[0][1:]
         self.state.Join(uid, channel)
 
-    # :20QAAAAAB PART #test :foo
-    def got_part(self, line):
-        lp = line.split(' ', 4)
-        if len(lp) == 4:
-            msg = lp[3][1:]
+    # :uid PART #test :foo
+    def got_part(self, lp, suffix):
+        if suffix:
+            msg = suffix
         else:
             msg = ''
         uid = lp[0][1:]
@@ -154,8 +140,7 @@ class Conn(basic.LineReceiver):
 
     # PING :arg
     # :sid PING arg :dest
-    def got_ping(self, line):
-        lp = line.split(' ')
+    def got_ping(self, lp, suffix):
         if lp[0].lower() == 'ping':
             self.sendLine('PONG %s' % lp[1])
             return
@@ -163,11 +148,11 @@ class Conn(basic.LineReceiver):
         self.sendLine(':%s PONG %s :%s' % (self.me.sid, self.me.name, farserv.sid))
 
     # SVINFO who cares
-    def got_svinfo(self, line):
+    def got_svinfo(self, lp, suffix):
         pass
 
     # NOTICE
-    def got_notice(self, line):
+    def got_notice(self, lp, suffix):
         pass
 
     # ENCAP, argh.
@@ -179,19 +164,16 @@ class Conn(basic.LineReceiver):
 
     # SU
     # :sid SU uid account
-    def got_su(self, line):
-        print 'SU: %s' % line
-        lp = line.split(' ')
-        cuid = lp[2]
-        if cuid[0] == ':':
-            cuid = cuid[1:]
-        if len(lp) <= 3:
-            lp.append(None)
-        self.state.Client(cuid).login = lp[3]
-        if lp[3]:
-            self.loginClient(self.state.Client(cuid))
-        else:
+    def got_su(self, lp, suffix):
+        print 'SU: %s :%s' % (line, suffix)
+        if len(lp) == 2:
+            cuid = suffix
+            self.state.Client(cuid).login = None
             self.logoutClient(self.state.Client(cuid))
+        else:
+            cuid = lp[2]
+            self.state.Client(cuid).login = suffix
+            self.loginClient(self.state.Client(cuid))
 
     # :sid MODE uid :+modes
     # :uid MODE uid :+modes
@@ -199,9 +181,7 @@ class Conn(basic.LineReceiver):
     # technically legal (charybdis just seems to always use TMODE instead)
     # :sid MODE channel :+modes
     # :uid MODE channel :+modes
-    def got_mode(self, line):
-        lp = line.split(' ', 4)
-        modes = lp[3][1:]
+    def got_mode(self, lp, modes):
         src = self.findsrc(lp[0][1:])
         if lp[2][0] == '#':
             dest = self.state.chans[lp[2]]
@@ -212,8 +192,7 @@ class Conn(basic.LineReceiver):
     # :sid TMODE ts channel +modes
     # :uid TMODE ts channel +modes
     # yes, TMODE really does not use a ':' before the modes arg.
-    def got_tmode(self, line):
-        lp = line.split(' ', 5)
+    def got_tmode(self, lp, suffix):
         modes = lp[4]
         src = self.findsrc(lp[0][1:])
         ts = int(lp[2])
@@ -269,7 +248,10 @@ class Conn(basic.LineReceiver):
     def dispatch(self, cmd, line):
         method = getattr(self, 'got_%s' % cmd.lower(), None)
         if method is not None:
-            method(line)
+            t = line.split(' :', 1)
+            if len(t) < 2:
+                t.append(None)
+            method(t[0].split(' '), t[1])
         else:
             print 'Unhandled msg: %s' % line
 
@@ -285,7 +267,10 @@ class Conn(basic.LineReceiver):
             lk = lp[0]
         else:
             lk = lp[1]
-        self.dispatch(lk, line)
+        if lk.lower() == 'encap':
+            self.got_encap(line)
+        else:
+            self.dispatch(lk, line)
 
     # Extra interface stuff.
     def newClient(self, client):
