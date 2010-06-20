@@ -66,7 +66,7 @@ class ServerSupportedFeatures(_CommandDispatcherMixin):
         self._features = {
             'CHANNELLEN': 50,
             'CHANTYPES': tuple('#'),
-            'MODES': 3,
+            'MODES': 4,
             'NICKLEN': 16,
             'PREFIX': self._parsePrefixParam('(ov)@+'),
             # The ISUPPORT draft explicitly says that there is no default for
