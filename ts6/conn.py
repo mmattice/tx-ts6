@@ -179,7 +179,6 @@ class Conn(basic.LineReceiver):
     def got_privmsg(self, lp, message):
         source = self.uidorchan(lp[0][1:])
         dest = self.uidorchan(lp[2])
-        print "privmsg from %s to %s - %s" % (source, dest, message)
         dest.privmsg(source, dest, message)
 
     # ENCAP, argh.

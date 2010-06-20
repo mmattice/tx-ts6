@@ -23,6 +23,9 @@ class Idoru(Client):
         Client.userQuit(self, client, message)
         print 'saw quit %s "%s"' % (client, message)
 
+    def privmsg(self, client, target, message):
+        print 'saw privmsg %s->%s "%s"' % (client, target, message)
+
     def signedOn(self):
         self.join('#test')
         self.part('#test', 'foo')

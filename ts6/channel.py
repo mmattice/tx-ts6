@@ -37,4 +37,7 @@ class Channel:
 
     def privmsg(self, source, dest, message):
         """ distribute messages to local clients """
-        pass
+        for  c in self.clients:
+            if c.conn:
+                if c != source:
+                    c.privmsg(source, dest, message)
