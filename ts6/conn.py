@@ -75,6 +75,11 @@ class Conn(basic.LineReceiver):
     def got_pass(self, lp, suffix):
         self.farsid = suffix
 
+    def got_capab(self, lp, suffix):
+        """ should really handle these as well """
+        self.bursting = True
+        self.burstStart()
+
     # SERVER name hops :gecos
     def got_server(self, lp, suffix):
         s = Server(self.farsid, lp[1], suffix)
@@ -149,7 +154,7 @@ class Conn(basic.LineReceiver):
             self.sendLine('PONG %s' % lp[1])
             return
         farserv = self.state.sbysid[lp[0][1:]]
-        self.sendLine(':%s PONG %s :%s' % (self.me.sid, self.me.name, farserv.sid))
+        self.sendLine(':%s PONG %s :%s' % (self.factory.me.sid, self.factory.me.name, farserv.sid))
 
     # SVINFO who cares
     def got_svinfo(self, lp, suffix):
@@ -221,10 +226,7 @@ class Conn(basic.LineReceiver):
 
     # Interface methods.
     def connectionMade(self):
-        self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
         self.register()
-        self.bursting = True
-        self.burstStart()
 
     def register(self):
         # hardcoded caps :D

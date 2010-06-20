@@ -10,6 +10,7 @@ class IrcdConn(Conn):
 
     def connectionMade(self):
         self.state = self.factory.state
+        self.state.conn = self
         Conn.connectionMade(self)
 
     def sendLine(self, line):
@@ -28,3 +29,6 @@ class IrcdFactory(protocol.ClientFactory):
     protocol = IrcdConn
     state = ServerState()
     pseudoclientstate = {}
+
+    def __init__(self):
+        self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
