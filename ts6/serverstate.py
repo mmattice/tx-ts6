@@ -1,3 +1,6 @@
+import time
+from ts6.channel import Channel
+
 class ServerState:
     def __init__(self):
         self.sid = '99Z'
@@ -60,17 +63,22 @@ class ServerState:
         c.ts = ts
         c.identified = False
 
-    def Join(self, uid, channel):
-        h = self.chans[channel.lower()]
-        c = self.Client(uid)
-        c.joined(h)
-        h.joined(c)
+    def Join(self, client, channelname):
+        cn = channelname.lower()
+        tc = self.chans.get(cn, None)
+        if not tc:
+            tc = Channel(cn, 'nt', int(time.time()))
+            self.chans[cn] = tc
+        if client not in tc.clients:
+            self.conn.sjoin(client, tc)
+            tc.joined(client)
 
-    def Part(self, uid, channel, msg):
-        h = self.chans[channel]
-        c = self.Client(uid)
-        c.parted(h)
-        h.parted(c, msg)
+    def Part(self, client, channelname, reason=None):
+        cn = channelname.lower()
+        tc = self.chans[cn]
+        if client in tc.clients:
+            self.conn.part(client, tc, reason)
+            tc.left(client, reason)
 
     def Away(self, uid, msg):
         c = self.Client(uid)

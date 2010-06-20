@@ -92,19 +92,18 @@ class Conn(basic.LineReceiver):
         s = Server(lp[4], lp[2], suffix)
         self.state.addServer(s)
 
+    def sjoin(self, client, channel):
+        if client.server.sid == self.state.sid:
+            self.sendLine(':%s SJOIN %lu %s + :@%s' %
+                          (client.server.sid, channel.ts, channel.name, client.uid))
+
     # :sid SJOIN ts name modes [args...] :uid uid...
     def got_sjoin(self, lp, suffix):
         src = self.findsrc(lp[0][1:])
         (ts, name) = (int(lp[2]), lp[3])
 
-        modes = []
+        modes = lp[4:]  ### modes surely aren't in the proper format here
         uids = suffix.split(' ')
-        while uids:
-            m = uids[0]
-            if m[0] == ':':
-                break
-            modes.append(m)
-            uids = uids[1:]
 
         h = self.state.chans.get(name.lower(), None)
 
@@ -129,13 +128,21 @@ class Conn(basic.LineReceiver):
             self.state.chans[name.lower()] = h
 
         for x in uids:
-            self.state.Join(x[-9:], name)
+            self.state.Join(self.state.Client(x[-9:]), name)
 
     # :uid JOIN ts name +
     def got_join(self, lp, suffix):
         channel = lp[3]
-        uid = lp[0][1:]
-        self.state.Join(uid, channel)
+        client = self.state.Client(lp[0][1:])
+        self.state.Join(client, channel)
+
+    def part(self, client, channel, reason=None):
+        if reason:
+            ir = ' :%s' % reason
+        else:
+            ir = ''
+        if client.server.sid == self.state.sid:
+            self.sendLine(':%s PART %s%s' % (client.uid, channel, ir))
 
     # :uid PART #test :foo
     def got_part(self, lp, suffix):
@@ -143,9 +150,9 @@ class Conn(basic.LineReceiver):
             msg = suffix
         else:
             msg = ''
-        uid = lp[0][1:]
+        client = self.state.Client(lp[0][1:])
         channel = lp[2]
-        self.state.Part(uid, channel, msg)
+        self.state.Part(client, channel, msg)
 
     # PING :arg
     # :sid PING arg :dest

@@ -5,17 +5,27 @@ from ts6.server import Server
 class Idoru(Client):
     def userJoined(self, client, channel):
         Client.userJoined(self, client, channel)
-        print 'Idoru: join %s %s' % (client.nick, channel.name)
+        print 'saw join %s %s' % (client, channel)
 
-    def userParted(self, client, channel, message):
-        Client.userParted(self, client, channel, message)
-        print 'Idoru: part %s %s "%s"' % (client.nick, channel.name, message)
+    def joined(self, channel):
+        Client.joined(self, channel)
+        print '%s: joined %s' % (self.nick, channel)
+
+    def userLeft(self, client, channel, message):
+        Client.userLeft(self, client, channel, message)
+        print 'saw part %s %s "%s"' % (client, channel, message)
+
+    def left(self, channel):
+        Client.left(self, channel)
+        print '%s: left %s' % (self.nick, channel)
 
     def userQuit(self, client, message):
         Client.userQuit(self, client, message)
-        print 'Idoru: quit %s "%s"' % (client.nick, message)
+        print 'saw quit %s "%s"' % (client, message)
 
     def signedOn(self):
+        self.join('#test')
+        self.part('#test', 'foo')
         self.join('#test')
 
 class TestIrcdConn(IrcdConn):

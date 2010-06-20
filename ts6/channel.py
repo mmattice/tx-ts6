@@ -11,16 +11,20 @@ class Channel:
     def joined(self, client):
         self.clients.append(client)
         for c in self.clients:
-            if not c.conn:
-                continue
-            c.userJoined(client, self)
+            if c.conn:
+                if c == client:
+                    c.joined(self)
+                else:
+                    c.userJoined(client, self)
 
-    def parted(self, client, message):
-        self.clients.remove(client)
+    def left(self, client, message):
         for c in self.clients:
-            if not c.conn:
-                continue
-            c.userParted(client, self, message)
+            if c.conn:
+                if c == client:
+                    c.left(self)
+                else:
+                    c.userLeft(client, self, message)
+        self.clients.remove(client)
 
     def modeset(self, src, modes):
         print '%s modes %s' % (self, modes)

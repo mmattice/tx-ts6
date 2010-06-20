@@ -424,7 +424,7 @@ class Client:
         print "registered Client %s" % self
 
     def __str__(self):
-        return '%s:%s!%s@%s' % (self.uid, self.nick, self.user, self.host)
+        return '%s!%s@%s' % (self.nick, self.user, self.host)
 
     def __sendLine(self, line):
         self.conn.sendLine(line)
@@ -613,7 +613,7 @@ class Client:
         """Called when I see another user joining a channel.
         """
 
-    def userLeft(self, user, channel):
+    def userLeft(self, user, channel, reason=None):
         """Called when I see another user leaving a channel.
         """
 
@@ -666,15 +666,7 @@ class Client:
         @type key: C{str}
         @param key: If specified, the key used to join the channel.
         """
-        tc = self.conn.state.chans.get(channel, None)
-        if not tc:
-            tc = Channel(channel, 'nt', int(time.time()))
-            self.conn.state.chans[channel] = tc
-        self.__sendLine(':%s SJOIN %lu %s + :@%s' %
-                        (self.server.sid, tc.ts, channel, self.uid))
-        self.joined(tc)
-        tc.joined(self)
-        self.chans.append(channel)
+        self.factory.state.Join(self, channel)
 
     def leave(self, channel, reason=None):
         """
@@ -686,7 +678,7 @@ class Client:
         @type reason: C{str}
         @param reason: If given, the reason for leaving.
         """
-        self.chans.remove(channel)
+        self.factory.state.Part(self, channel, reason)
 
     part = leave
 
