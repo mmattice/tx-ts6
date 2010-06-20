@@ -41,3 +41,10 @@ class Channel:
             if c.conn:
                 if c != source:
                     c.privmsg(source, dest, message)
+
+    def noticed(self, source, dest, message):
+        """ distribute notices to local clients """
+        for c in self.clients:
+            if c.conn:
+                if c != source:
+                    c.noticed(source, dest, message)

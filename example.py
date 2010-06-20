@@ -26,6 +26,9 @@ class Idoru(Client):
     def privmsg(self, client, target, message):
         print 'saw privmsg %s->%s "%s"' % (client, target, message)
 
+    def noticed(self, client, target, message):
+        print 'saw notice %s->%s "%s"' % (client, target, message)
+
     def signedOn(self):
         self.join('#test')
         self.part('#test', 'foo')

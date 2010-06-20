@@ -12,6 +12,7 @@ class Conn(basic.LineReceiver):
     delimiter = '\n'
     MAX_LENGTH = 16384
 
+    farsid = None
     # incoming message handlers
 
     # 0    1    2    3    4  5     6    7             8 9   10   11      12
@@ -173,8 +174,11 @@ class Conn(basic.LineReceiver):
         pass
 
     # NOTICE
-    def got_notice(self, lp, suffix):
-        pass
+    def got_notice(self, lp, message):
+        if self.farsid:
+            source = self.uidorchan(lp[0][1:])
+            dest = self.uidorchan(lp[2])
+            dest.noticed(source, dest, message)
 
     def got_privmsg(self, lp, message):
         source = self.uidorchan(lp[0][1:])
