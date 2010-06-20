@@ -130,6 +130,11 @@ class Conn(basic.LineReceiver):
         for x in uids:
             self.state.Join(self.state.Client(x[-9:]), name)
 
+    def join(self, client, channel):
+        if client.server.sid == self.state.sid:
+            self.sendLine(':%s JOIN %lu %s +' %
+                          (client.uid, time.time(), channel.name))
+
     # :uid JOIN ts name +
     def got_join(self, lp, suffix):
         channel = lp[3]
