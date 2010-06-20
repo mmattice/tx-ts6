@@ -52,9 +52,7 @@ class TestIrcdConn(IrcdConn):
 
     def burstStart(self):
         print 'twisted-seven: burst starting'
-        for c in self.factory.clients:
-            c.conn = self
-            c.connectionMade()
+        IrcdConn.burstStart(self)
 
     def burstEnd(self):
         print 'twisted-seven: burst over'
@@ -69,6 +67,7 @@ class TestIrcdFactory(IrcdFactory):
         self.clients = [Idoru(self, self.me, 'idoru')]
         for c in self.clients:
             self.state.addClient(c)
+            c.connectionMade()
 
     def clientConnectionLost(self, connector, reason):
         print 'connection lost - %s' % (reason,)

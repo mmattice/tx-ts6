@@ -3,6 +3,7 @@ from ts6.channel import Channel
 
 class ServerState:
     def __init__(self):
+        self.conn = None
         self.sid = '99Z'
         self.servername = 'ts6.local'
         self.serverdesc = 'twisted-ts6 test'
@@ -42,6 +43,14 @@ class ServerState:
             del(self.sbyname[s.name])
             del(self.sbysid[sid])
 
+    def burst(self):
+        """ Handle pushing all known state to opposite end of connection """
+        for uid, c in self.cbyuid.iteritems():
+            if c.conn:
+                self.conn.introduce(c)
+        for channame, channel in self.chans.iteritems():
+            self.conn.burstchan(channel)
+
     def Client(self, uid):
         return self.cbyuid[uid]
 
@@ -70,14 +79,16 @@ class ServerState:
             tc = Channel(cn, 'nt', int(time.time()))
             self.chans[cn] = tc
         if client not in tc.clients:
-            self.conn.sjoin(client, tc)
+            if self.conn:
+                self.conn.sjoin(client, tc)
             tc.joined(client)
 
     def Part(self, client, channelname, reason=None):
         cn = channelname.lower()
         tc = self.chans[cn]
         if client in tc.clients:
-            self.conn.part(client, tc, reason)
+            if self.conn:
+                self.conn.part(client, tc, reason)
             tc.left(client, reason)
 
     def Away(self, uid, msg):

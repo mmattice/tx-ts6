@@ -8,6 +8,15 @@ from ts6.channel import Channel
 from ts6.client import Client
 from ts6.server import Server
 
+from itertools import islice
+
+def split_every(n, iterable):
+    i = iter(iterable)
+    piece = list(islice(i, n))
+    while piece:
+        yield piece
+        piece = list(islice(i, n))
+
 class Conn(basic.LineReceiver):
     delimiter = '\n'
     MAX_LENGTH = 16384
@@ -31,6 +40,23 @@ class Conn(basic.LineReceiver):
                    )
         self.state.addClient(c)
         self.newClient(c)
+
+    def introduce(self, client):
+        """ send EUID and other status for burst """
+        self.sendLine(':%s EUID %s 1 %lu %s %s %s 0 %s * * :%s' %
+                      (self.state.sid, client.nick, client.ts,
+                       client.modes, client.user, client.host, client.uid,
+                       client.gecos))
+        self.sendLine(':%s ENCAP * IDENTIFIED %s %s' %
+                      (self.state.sid, client.uid, client.nick))
+
+    def burstchan(self, channel):
+        """ send known channel state for burst """
+        print 'bursting channel %s' % (channel,)
+        clientchunks = split_every(20, channel.clients)
+        for chunk in clientchunks:
+            self.sendLine(':%s SJOIN %lu %s + :%s' %
+                          (self.state.sid, channel.ts, channel.name, ' '.join(map(lambda x: x.uid, chunk))))
 
     # :sid UID nick hops ts modes user host ip uid :gecos
     def got_uid(self, lp, suffix):
@@ -79,7 +105,11 @@ class Conn(basic.LineReceiver):
     def got_capab(self, lp, suffix):
         """ should really handle these as well """
         self.bursting = True
+        for c in self.factory.clients:
+            c.conn = self
         self.burstStart()
+        self.state.conn = self
+        self.state.burst()
 
     # SERVER name hops :gecos
     def got_server(self, lp, suffix):
@@ -234,10 +264,6 @@ class Conn(basic.LineReceiver):
                   modes, dest, src, ts, dest.ts)
             return
         dest.modeset(src, modes)
-
-    def introduce(self, obj):
-        obj.introduce()
-        self.state.addClient(obj)
 
     # Interface methods.
     def connectionMade(self):

@@ -818,10 +818,6 @@ class Client:
         @param servername: If specified, the servername to logon as.
         """
         self.nick = nickname
-        self.__sendLine(':%s EUID %s 1 %lu %s %s %s 0 %s * * :%s' %
-                        (self.factory.me.sid, self.nick, int(time.time()),
-                         self.modes, self.user, self.host, self.uid,
-                         self.gecos))
         self.signedOn()
 
     def setNick(self, nickname):
