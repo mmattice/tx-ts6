@@ -72,9 +72,12 @@ class ServerState:
         c.ts = ts
         c.identified = False
 
-    def Join(self, client, channelname):
-        cn = channelname.lower()
-        tc = self.chans.get(cn, None)
+    def Join(self, client, channel):
+        if getattr(channel, 'name', None):
+            tc = channel
+        else:
+            cn = channel.lower()
+            tc = self.chans.get(cn, None)
         if not tc:
             tc = Channel(cn, 'nt', int(time.time()))
             self.chans[cn] = tc
