@@ -265,6 +265,13 @@ class Conn(basic.LineReceiver):
             return
         dest.modeset(src, modes)
 
+    # :actinguid KICK channel kickeduid :message
+    def got_kick(self, lp, message):
+        kicker = self.uidorchan(lp[0][1:])
+        channel = self.uidorchan(lp[2])
+        kicked = self.uidorchan(lp[3])
+        channel.kick(kicker, kicked, message)
+
     # Interface methods.
     def connectionMade(self):
         self.register()

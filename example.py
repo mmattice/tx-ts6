@@ -29,6 +29,12 @@ class Idoru(Client):
     def noticed(self, client, target, message):
         print '%s:  saw notice %s->%s "%s"' % (self.nick, client, target, message)
 
+    def kickedFrom(self, channel, kicker, message):
+        print '%s was kicked from %s by %s "%s"' % (self, channel, kicker, message)
+
+    def userKicked(self, kickee, channel, kicker, message):
+        print '%s: saw %s kick %s from %s "%s"' % (self, kicker, kickee, channel, message)
+
     def signedOn(self):
         print '%s: signedOn' % (self.nick)
         self.join('#test')

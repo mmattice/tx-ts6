@@ -48,3 +48,13 @@ class Channel:
             if c.conn:
                 if c != source:
                     c.noticed(source, dest, message)
+
+    def kick(self, kicker, kickee, message):
+        """ distribute kick notifications """
+        for c in self.clients:
+            if c.conn:
+                if c == kickee:
+                    self.clients.remove(kickee)
+                    c.kickedFrom(self, kicker, message)
+                else:
+                    c.userKicked(kickee, self, kicker, message)
