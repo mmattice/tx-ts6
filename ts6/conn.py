@@ -334,6 +334,12 @@ class Conn(basic.LineReceiver):
         else:
             return self.state.Client(dst)
 
+    def nickorchan(self, dst):
+        if dst[0] == '#':
+            return self.state.chans[dst.lower()]
+        else:
+            return self.state.Client(dst.lower())
+
     # Some events
 
     def sendLine(self, line):
