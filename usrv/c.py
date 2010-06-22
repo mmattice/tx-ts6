@@ -40,14 +40,27 @@ class C(Service):
                                     }
         self.reply(src, 'Channel %s registered.' % ap[0])
 
-    # OP <channel> <nick>
-    def cmd_op(self, src, target, args):
+    # DROP <channel>
+    def cmd_drop(self, src, target, args):
+        ap = args.split(' ')
+        if len(ap) != 1:
+            self.reply(src, 'Syntax: DROP <channel>')
+            return
+        if not self.hasacs(ap[0], src, 'f'):
+            self.reply(src, 'No access.')
+            return
+        del self.chans[ap[0].lower()]
+        self.reply(src, 'Channel %s dropped.' % ap[0])
+
+
+    # mode command backend
+    def modecmd(self, src, args, flag, mode, name):
         ap = args.split(' ')
         if len(ap) != 2:
-            self.reply(src, 'Syntax: OP <channel> <nick>')
+            self.reply(src, 'Syntax: %s <channel> <nick>' % name)
             return
         (chan, nick) = ap
-        if not self.hasacs(chan, src, 'o'):
+        if not self.hasacs(chan, src, flag):
             self.reply(src, 'No access.')
             return
         user = self.conn.state.cbynick.get(nick.lower(), None)
@@ -58,5 +71,17 @@ class C(Service):
         if not ch:
             self.reply(src, '%s is empty.' % ch)
             return
-        self.conn.scmode(ch, '+o %s' % user.uid)
-        self.reply(src, 'Opped %s on %s.' % (chan, nick))
+        self.conn.scmode(ch, '%s %s' % (mode, user.uid))
+        self.reply(src, 'Set mode %s %s on %s.' % (mode, nick, chan))
+
+    def cmd_op(self, src, target, args):
+        return self.modecmd(src, args, 'o', '+o', 'OP')
+
+    def cmd_deop(self, src, target, args):
+        return self.modecmd(src, args, 'o', '-o', 'DEOP')
+
+    def cmd_voice(self, src, target, args):
+        return self.modecmd(src, args, 'v', '+v', 'VOICE')
+
+    def cmd_devoice(self, src, target, args):
+        return self.modecmd(src, args, 'v', '-v', 'DEVOICE')
