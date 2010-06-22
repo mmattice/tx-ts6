@@ -24,6 +24,14 @@ class Conn(basic.LineReceiver):
     farsid = None
     # incoming message handlers
 
+    def login(self, user, acct):
+        user.login = acct
+        self.sendLine(':%s ENCAP * SU %s :%s' % (self.state.sid, user.uid, acct))
+
+    def logout(self, user):
+        user.login = None
+        self.sendLine(':%s ENCAP * SU %s' % (self.state.sid, user.uid))
+
     # 0    1    2    3    4  5     6    7             8 9   10   11      12
     # :sid EUID nick hops ts umode user host(visible) 0 uid host account :gecos
     def got_euid(self, lp, suffix):
@@ -225,7 +233,6 @@ class Conn(basic.LineReceiver):
     # SU
     # :sid SU uid account
     def got_su(self, lp, suffix):
-        print 'SU: %s :%s' % (line, suffix)
         if len(lp) == 2:
             cuid = suffix
             self.state.Client(cuid).login = None
