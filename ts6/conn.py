@@ -35,9 +35,6 @@ class Conn(basic.LineReceiver):
     def scmode(self, target, modes):
         self.sendLine(':%s TMODE %ld %s %s' % (self.state.sid, target.ts, target.name, modes))
 
-    def notice(self, client, target, msg):
-        self.sendLine(':%s NOTICE %s :%s' % (client.uid, target.uid, msg))
-
     # 0    1    2    3    4  5     6    7             8 9   10   11      12
     # :sid EUID nick hops ts umode user host(visible) 0 uid host account :gecos
     def got_euid(self, lp, suffix):
@@ -228,6 +225,28 @@ class Conn(basic.LineReceiver):
             source = self.uidorchan(lp[0][1:])
             dest = self.uidorchan(lp[2])
             dest.noticed(source, dest, message)
+
+    def notice(self, source, dest_t, message):
+        # dest_t should never be a Client instance
+        # as IRCClient wouldn't know what it was, but
+        # we can accept them
+        if getattr(dest_t, 'uid', None):
+            dest = dest_t
+        else:
+            dest = self.nickorchan(dest_t)
+        if getattr(dest, 'uid', None):
+            # destination is Client
+            if dest.conn:
+                dest.noticed(source, dest, message)
+            else:
+                self.sendLine(':%s NOTICE %s :%s' % (source.uid, dest.uid, message))
+        else:
+            # destination is channel
+            self.sendLine(':%s NOTICE %s :%s' % (source.uid, dest.name, message))
+            # distribute to local clients
+            for c in dest.clients:
+                if c.conn:
+                    c.noticed(source, dest, message)
 
     def got_privmsg(self, lp, message):
         source = self.uidorchan(lp[0][1:])
