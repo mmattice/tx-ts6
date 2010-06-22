@@ -98,6 +98,12 @@ class ServerState:
         c = self.Client(uid)
         c.away = msg
 
+    def addKline(self, kliner, duration, usermask, hostmask, reason):
+        pass
+
+    def Kill(self, killer, killee, message):
+        pass
+
     def addServer(self, server):
         self.sbysid[server.sid] = server
         self.sbyname[server.name] = server
