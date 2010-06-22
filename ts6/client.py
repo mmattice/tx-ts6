@@ -565,6 +565,10 @@ class Client:
             response to something it received.
         """
 
+    def modeset(self, modes):
+        # XXX ignores user modes
+        pass
+
     def modeChanged(self, user, channel, set, modes, args):
         """Called when users or channel's modes are changed.
 
@@ -782,6 +786,7 @@ class Client:
         @type message: C{str}
         @param message: The contents of the notice to send.
         """
+        self.conn.sendLine(':%s NOTICE %s :%s' % (self.uid, user.uid, message))
 
     def away(self, message=''):
         """
