@@ -139,6 +139,11 @@ class Conn(basic.LineReceiver):
             self.sendLine(':%s SJOIN %lu %s + :@%s' %
                           (client.server.sid, channel.ts, channel.name, client.uid))
 
+    def hack_sjoin(self, client, channel):
+        if client.server.sid == self.state.sid:
+            channel.tschange(channel.ts - 1, '+')
+            self.sjoin(client, channel)
+
     # :sid SJOIN ts name modes [args...] :uid uid...
     def got_sjoin(self, lp, suffix):
         src = self.findsrc(lp[0][1:])

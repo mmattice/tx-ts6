@@ -31,6 +31,7 @@ class Channel:
 
     def tschange(self, newts, modes):
         print '%s ts change %d %s' % (self, newts, modes)
+        self.ts = newts
 
     def __str__(self):
         return self.name

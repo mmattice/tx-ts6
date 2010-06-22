@@ -19,6 +19,39 @@ class C(Service):
             return False
         return ac in c['acl'][user.login]
 
+    def parseflags(self, flags):
+        set = True
+        add = []
+        remove = []
+        for f in flags:
+            if f == '+':
+                set = True
+            elif f == '-':
+                set = False
+            elif set:
+                add.append(f)
+            else:
+                remove.append(f)
+        return (add, remove)
+
+    def canchange(self, chan, src, flags):
+        if self.hasacs(chan, src, 'f'):
+            return True
+        if 'f' in flags:
+            return False
+        return self.hasacs(chan, src, 'a')
+
+    def checkfounders(self, src, cn):
+        ch = self.getchan(cn)
+        tf = 0
+        for x in ch['acl']:
+            if 'f' in ch['acl'][x]:
+                tf += 1
+        if tf != 0:
+            return
+        self.reply(src, 'Dropping %s (no founders)' % cn)
+        del self.chans[cn.lower()]
+
     # REGISTER <channel>
     def cmd_register(self, src, target, args):
         ap = args.split(' ')
@@ -36,7 +69,7 @@ class C(Service):
             self.reply(src, 'Channel %s does not exist.' % ap[0])
             return
         self.chans[ap[0].lower()] = { 'acl':
-                                        { src.login: 'afjov' }
+                                        { src.login: 'afjorv' }
                                     }
         self.reply(src, 'Channel %s registered.' % ap[0])
 
@@ -52,6 +85,66 @@ class C(Service):
         del self.chans[ap[0].lower()]
         self.reply(src, 'Channel %s dropped.' % ap[0])
 
+    # RECOVER <channel>
+    def cmd_recover(self, src, target, args):
+        ap = args.split(' ')
+        if len(ap) != 1:
+            self.reply(src, 'Syntax: RECOVER <channel>')
+            return
+        if not self.hasacs(ap[0], src, 'r'):
+            self.reply(src, 'No access.')
+            return
+        ch = self.conn.state.chans.get(ap[0].lower(), None)
+        if not ch:
+            self.reply(src, 'Channel %s is empty.' % ap[0])
+            return
+        self.conn.hack_sjoin(self, ch)
+        self.conn.scmode(ch, '+o %s' % src.uid)
+        self.conn.part(self, ch, 'RECOVER by %s' % src)
+        self.reply(src, 'Channel %s recovered.' % ap[0])
+
+    # FLAGS <channel> [account [flags]]
+    def cmd_flags(self, src, target, args):
+        ap = args.split(' ')
+        if len(ap) < 1:
+            self.reply(src, 'Syntax: FLAGS <channel> [account [flags]]')
+            return
+        ch = self.getchan(ap[0])
+        if not ch:
+            self.reply(src, 'Channel %s is not registered.' % ap[0])
+            return
+        if len(ap) == 1:
+            ks = ch['acl'].keys()
+            ks.sort()
+            self.reply(src, 'Flags for %s:' % ap[0])
+            for a in ks:
+                self.reply(src, '  %s %s' % (a, ch['acl'][a]))
+            self.reply(src, 'Done (%d entries)' % len(ks))
+            return
+        if len(ap) == 2:
+            u = ch['acl'].get(ap[1].lower(), '<none>')
+            self.reply(src, 'Flags for %s on %s: %s' % (ap[1], ap[0], u))
+            return
+        if len(ap) == 3:
+            if not self.canchange(ap[0], src, ap[2]):
+                self.reply(src, 'Access denied.')
+                return
+            (add, remove) = self.parseflags(ap[2])
+            flz = list(ch['acl'].get(ap[1].lower(), ''))
+            for f in add:
+                flz.append(f)
+            for f in remove:
+                flz.remove(f)
+            flz = ''.join(flz)
+            if flz:
+                ch['acl'][ap[1].lower()] = flz
+                self.reply(src, 'Flags for %s on %s set to %s.' % (ap[1], ap[0], flz))
+            else:
+                del ch['acl'][ap[1].lower()]
+                self.reply(src, 'Flags for %s on %s deleted.' % (ap[1], ap[0]))
+            self.checkfounders(src, ap[0])
+            return
+        self.reply(src, 'Syntax: FLAGS <channel> [account [flags]]')
 
     # mode command backend
     def modecmd(self, src, args, flag, mode, name):
