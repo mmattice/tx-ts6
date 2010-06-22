@@ -272,6 +272,18 @@ class Conn(basic.LineReceiver):
         kicked = self.uidorchan(lp[3])
         channel.kick(kicker, kicked, message)
 
+    # <- :uid KLINE * length user host :reason (time)
+    def got_kline(self, lp, message):
+        (uid, cmd, encaptarget, duration, usermask, hostmask) = lp
+        uid = uid[1:]
+        self.state.addKline(self.state.Client(uid), duration, usermask, hostmask, message)
+
+    # <- :killeruid KILL killeeuid :servername!killerhost!killeruser!killernick (<No reason given>)
+    def got_kill(self, lp, message):
+        (killeruid, cmd, killeeuid) = lp
+        killeruid = killeruid[1:]
+        self.state.Kill(self.state.Client(killeruid), self.state.Client(killeeuid), message)
+
     # Interface methods.
     def connectionMade(self):
         self.register()
