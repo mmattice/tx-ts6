@@ -782,6 +782,7 @@ class Client:
         @type message: C{str}
         @param message: The contents of the notice to send.
         """
+        self.conn.sendLine(':%s NOTICE %s :%s' % (self.uid, user.uid, message))
 
     def away(self, message=''):
         """
