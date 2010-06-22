@@ -101,6 +101,9 @@ class ServerState:
     def Notice(self, client, target, msg):
         self.conn.notice(client, target, msg)
 
+    def Privmsg(self, client, target, msg):
+        self.conn.privmsg(client, target, msg)
+
     def addKline(self, kliner, duration, usermask, hostmask, reason):
         pass
 

@@ -253,6 +253,28 @@ class Conn(basic.LineReceiver):
         dest = self.uidorchan(lp[2])
         dest.privmsg(source, dest, message)
 
+    def privmsg(self, source, dest_t, message):
+        # dest_t should never be a Client instance
+        # as IRCClient wouldn't know what it was, but
+        # we can accept them
+        if getattr(dest_t, 'uid', None):
+            dest = dest_t
+        else:
+            dest = self.nickorchan(dest_t)
+        if getattr(dest, 'uid', None):
+            # destination is Client
+            if dest.conn:
+                dest.privmsg(source, dest, message)
+            else:
+                self.sendLine(':%s PRIVMSG %s :%s' % (source.uid, dest.uid, message))
+        else:
+            # destination is channel
+            self.sendLine(':%s PRIVMSG %s :%s' % (source.uid, dest.name, message))
+            # distribute to local clients
+            for c in dest.clients:
+                if c.conn:
+                    c.privmsg(source, dest, message)
+
     # ENCAP, argh.
     # :src ENCAP * <cmd [args...]>
     def got_encap(self, line):

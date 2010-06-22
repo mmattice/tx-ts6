@@ -737,29 +737,11 @@ class Client:
             users to be banned from the channel.
         """
 
-    def say(self, channel, message, length = None):
-        """
-        Send a message to a channel
-
-        @type channel: C{str}
-        @param channel: The channel to say the message on. If it has no prefix,
-            C{'#'} will be prepended to it.
-        @type message: C{str}
-        @param message: The message to say.
-        @type length: C{int}
-        @param length: The maximum number of octets to send at a time.  This has
-            the effect of turning a single call to C{msg()} into multiple
-            commands to the server.  This is useful when long messages may be
-            sent that would otherwise cause the server to kick us off or
-            silently truncate the text we are sending.  If None is passed, the
-            entire message is always send in one command.
-        """
-
-    def msg(self, user, message, length = None):
+    def msg(self, dest, message, length = None):
         """Send a message to a user or channel.
 
-        @type user: C{str}
-        @param user: The username or channel name to which to direct the
+        @type dest: C{str}
+        @param dest: The username or channel name to which to direct the
         message.
 
         @type message: C{str}
@@ -773,6 +755,9 @@ class Client:
         truncate the text we are sending.  If None is passed, the entire
         message is always send in one command.
         """
+        self.factory.state.Privmsg(self, dest, message)
+
+    say = msg
 
     def notice(self, user, message):
         """
