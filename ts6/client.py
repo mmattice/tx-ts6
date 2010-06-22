@@ -565,6 +565,10 @@ class Client:
             response to something it received.
         """
 
+    def modeset(self, modes):
+        # XXX ignores user modes
+        pass
+
     def modeChanged(self, user, channel, set, modes, args):
         """Called when users or channel's modes are changed.
 
