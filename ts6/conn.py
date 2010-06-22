@@ -35,6 +35,9 @@ class Conn(basic.LineReceiver):
     def scmode(self, target, modes):
         self.sendLine(':%s TMODE %ld %s %s' % (self.state.sid, target.ts, target.name, modes))
 
+    def notice(self, client, target, msg):
+        self.sendLine(':%s NOTICE %s :%s' % (client.uid, target.uid, msg))
+
     # 0    1    2    3    4  5     6    7             8 9   10   11      12
     # :sid EUID nick hops ts umode user host(visible) 0 uid host account :gecos
     def got_euid(self, lp, suffix):

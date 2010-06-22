@@ -98,6 +98,9 @@ class ServerState:
         c = self.Client(uid)
         c.away = msg
 
+    def Notice(self, client, target, msg):
+        self.conn.notice(client, target, msg)
+
     def addKline(self, kliner, duration, usermask, hostmask, reason):
         pass
 
