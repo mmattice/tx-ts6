@@ -73,6 +73,7 @@ class ServerState:
         c.identified = False
 
     def Join(self, client, channel):
+        created = False
         if getattr(channel, 'name', None):
             tc = channel
         else:
@@ -81,9 +82,13 @@ class ServerState:
         if not tc:
             tc = Channel(cn, 'nt', int(time.time()))
             self.chans[cn] = tc
+            created = True
         if client not in tc.clients:
             if self.conn:
-                self.conn.sjoin(client, tc)
+                if created:
+                    self.conn.sjoin(client, tc)
+                else:
+                    self.conn.join(client, tc)
             tc.joined(client)
 
     def Part(self, client, channelname, reason=None):
