@@ -22,6 +22,7 @@ class Conn(basic.LineReceiver):
     MAX_LENGTH = 16384
 
     farsid = None
+    farcaps = None
     # incoming message handlers
 
     def login(self, user, acct):
@@ -115,6 +116,7 @@ class Conn(basic.LineReceiver):
 
     def got_capab(self, lp, suffix):
         """ should really handle these as well """
+        self.farcaps = suffix.split(' ')
         self.bursting = True
         for c in self.factory.clients:
             c.conn = self
@@ -122,10 +124,17 @@ class Conn(basic.LineReceiver):
         self.state.conn = self
         self.state.burst()
 
+    def got_gcap(self, lp, suffix):
+        rcaps = suffix.split(' ')
+        s = self.state.sbysid[lp[0][1:]]
+        s.caps = rcaps
+        print "Server capabilities registered: %s (%s)" % (s, s.caps)
+
     # SERVER name hops :gecos
     def got_server(self, lp, suffix):
         s = Server(self.farsid, lp[1], suffix)
-        print "Server created: %s" % s
+        s.caps = self.farcaps
+        print "Server created: %s (%s)" % (s, s.caps)
         self.state.sbysid[self.farsid] = s
         self.state.sbyname[lp[1]] = s
 
