@@ -117,12 +117,6 @@ class Conn(basic.LineReceiver):
     def got_capab(self, lp, suffix):
         """ should really handle these as well """
         self.farcaps = suffix.split(' ')
-        self.bursting = True
-        for c in self.factory.clients:
-            c.conn = self
-        self.burstStart()
-        self.state.conn = self
-        self.state.burst()
 
     def got_gcap(self, lp, suffix):
         rcaps = suffix.split(' ')
@@ -137,6 +131,13 @@ class Conn(basic.LineReceiver):
         print "Server created: %s (%s)" % (s, s.caps)
         self.state.sbysid[self.farsid] = s
         self.state.sbyname[lp[1]] = s
+        self.bursting = True
+        for c in self.factory.clients:
+            c.conn = self
+        self.burstStart()
+        self.state.conn = self
+        self.sendLine("SVINFO 6 3 0 :%lu" % int(time.time()))
+        self.state.burst()
 
     # :upsid SID name hops sid :gecos
     def got_sid(self, lp, suffix):
@@ -361,7 +362,6 @@ class Conn(basic.LineReceiver):
         self.sendLine("PASS %s TS 6 :%s" % (self.password, self.state.sid))
         self.sendLine("CAPAB :QS EX IE KLN UNKLN ENCAP TB SERVICES EUID EOPMOD MLOCK")
         self.sendLine("SERVER %s 1 :%s" % (self.state.servername, self.state.serverdesc))
-        self.sendLine("SVINFO 6 3 0 :%lu" % int(time.time()))
 
     # Utility methods
 
