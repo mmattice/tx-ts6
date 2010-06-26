@@ -1,6 +1,6 @@
-from ts6.client import Client
+from ts6.client import IRCClient
 
-class Service(Client):
+class Service(IRCClient):
     def privmsg(self, src, target, message):
         if target != self:
             pass

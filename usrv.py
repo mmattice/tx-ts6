@@ -26,7 +26,7 @@ class USrvFactory(IrcdFactory):
         self.state.servername = 'ts6.grixis.local'
         self.state.serverdesc = 'usrv services'
         self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
-        self.clients = [ A(self, self.me, 'A'), C(self, self.me, 'C') ]
+        self.clients = [ A(self, self.me, 'A', modes='oS'), C(self, self.me, 'C', modes='oS') ]
         for c in self.clients:
             self.state.addClient(c)
 

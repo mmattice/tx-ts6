@@ -400,52 +400,26 @@ class ServerSupportedFeatures(_CommandDispatcherMixin):
 
 
 class Client:
-    def __init__(self, factory, server, nick, *args, **kwargs):
-        self.factory = factory
+    def __init__(self, server, nick, *args, **kwargs):
         self.conn = None
         self.server = server
         self.nick = nick
-        self.user = kwargs.get('user', 'twisted')
-        self.host = kwargs.get('host', server.name)
-        self.hiddenhost = kwargs.get('hiddenhost', server.name)
+        if 'defaults' not in kwargs:
+            kwargs['defaults'] = {}
+        for arg in ('user','host','hiddenhost','gecos','modes','login','ts','uid'):
+            setattr(self, arg, kwargs.get(arg, kwargs['defaults'].get(arg, None)))
         if self.hiddenhost == '*':
             self.hiddenhost = self.host
-        self.gecos = kwargs.get('gecos', 'twisted-ts6 client')
-        self.modes = kwargs.get('modes', 'oS')
-        self.login = kwargs.get('login', None)
         if (self.login == '*'):
             self.login = None
-        self.ts = kwargs.get('ts', int(time.time()))
         self.chans = []
-        if 'uid' in kwargs.keys():
-            self.uid = kwargs['uid']
-        else:
-            self.uid = server.sid + self.factory.state.mkuid()
-        print "registered Client %s" % self
 
     def __str__(self):
         return '%s!%s@%s' % (self.nick, self.user, self.host)
 
-    def __sendLine(self, line):
-        self.conn.sendLine(line)
-
-    def _reallySendLine(self, line):
-        """ Should not be called directly
-            - IRCClient function that assumes it's speaking to a real server
-        """
-        pass
-
-    def sendLine(self, line):
-        """ Should not be called directly
-            - IRCClient function that assumes it's speaking to a real server
-        """
-        pass
-
-    def _sendLine(self):
-        """ Should not be called directly
-            - IRCClient function that assumes it's speaking to a real server
-        """
-        pass
+    ### useful stuff
+    def getNick(self, mask):
+        return mask.split('!')[0]
 
     ### Interface level client->user output methods
     ###
@@ -755,7 +729,6 @@ class Client:
         truncate the text we are sending.  If None is passed, the entire
         message is always send in one command.
         """
-        self.factory.state.Privmsg(self, dest, message)
 
     say = msg
 
@@ -771,7 +744,6 @@ class Client:
         @type message: C{str}
         @param message: The contents of the notice to send.
         """
-        self.factory.state.Notice(self, user, message)
 
     def away(self, message=''):
         """
@@ -807,8 +779,6 @@ class Client:
         @type servername: C{str}
         @param servername: If specified, the servername to logon as.
         """
-        self.nick = nickname
-        self.signedOn()
 
     def setNick(self, nickname):
         """
@@ -869,8 +839,9 @@ class Client:
     ### Protocol methods
 
     def connectionMade(self):
-        self.supported = ServerSupportedFeatures()
-        self.register(self.nick)
+        """
+        Called once the we're connected
+        """
 
     def dataReceived(self, data):
         """
@@ -920,3 +891,98 @@ class Client:
         dct['dcc_sessions'] = None
         dct['_pings'] = None
         return dct
+
+
+
+class IRCClient(Client):
+    def __init__(self, factory, server, nick, *args, **kwargs):
+        #print 'IRCClient.__init__ factory = %s, server = %s, nick = %s, args = %s, kwargs = %s' % (factory, server, nick, args, kwargs)
+        defl = { 'user' : 'twisted',
+                 'host' : server.name,
+                 'hiddenhost' : '*',
+                 'gecos' : 'twisted-ts6 client',
+                 'modes' : '+',
+                 'login' : None,
+                 'ts' : int(time.time()),
+                 }
+        kwargs['defaults'] = defl
+        Client.__init__(self, server, nick, *args, **kwargs)
+        self.factory = factory
+        self.uid = server.sid + self.factory.state.mkuid()
+        print "registered Client %s" % self
+
+    def __sendLine(self, line):
+        self.conn.sendLine(line)
+
+    def _reallySendLine(self, line):
+        """ Should not be called directly
+            - IRCClient function that assumes it's speaking to a real server
+        """
+        pass
+
+    def sendLine(self, line):
+        """ Should not be called directly
+            - IRCClient function that assumes it's speaking to a real server
+        """
+        pass
+
+    def _sendLine(self):
+        """ Should not be called directly
+            - IRCClient function that assumes it's speaking to a real server
+        """
+        pass
+
+    def connectionMade(self):
+        """
+        Called once the we're connected
+        """
+        self.supported = ServerSupportedFeatures()
+        self.register(self.nick)
+
+    def register(self, nickname, hostname='foo', servername='bar'):
+        """
+        Login to the server.
+
+        @type nickname: C{str}
+        @param nickname: The nickname to register.
+        @type hostname: C{str}
+        @param hostname: If specified, the hostname to logon as.
+        @type servername: C{str}
+        @param servername: If specified, the servername to logon as.
+        """
+        self.nick = nickname
+        self.signedOn()
+
+    def msg(self, dest, message, length = None):
+        """Send a message to a user or channel.
+
+        @type dest: C{str}
+        @param dest: The username or channel name to which to direct the
+        message.
+
+        @type message: C{str}
+        @param message: The text to send
+
+        @type length: C{int}
+        @param length: The maximum number of octets to send at a time.  This
+        has the effect of turning a single call to msg() into multiple
+        commands to the server.  This is useful when long messages may be
+        sent that would otherwise cause the server to kick us off or silently
+        truncate the text we are sending.  If None is passed, the entire
+        message is always send in one command.
+        """
+        self.factory.state.Privmsg(self, dest, message)
+
+    def notice(self, user, message):
+        """
+        Send a notice to a user.
+
+        Notices are like normal message, but should never get automated
+        replies.
+
+        @type user: C{str}
+        @param user: The user to send a notice to.
+        @type message: C{str}
+        @param message: The contents of the notice to send.
+        """
+        self.factory.state.Notice(self, user, message)

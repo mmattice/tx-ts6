@@ -40,7 +40,7 @@ class Conn(basic.LineReceiver):
     # :sid EUID nick hops ts umode user host(visible) 0 uid host account :gecos
     def got_euid(self, lp, suffix):
         s = self.state.sbysid[lp[0][1:]]
-        c = Client(None, s, lp[2],
+        c = Client(s, lp[2],
                    user = lp[6],
                    host = lp[7],
                    hiddenhost = lp[10],
@@ -73,7 +73,7 @@ class Conn(basic.LineReceiver):
     # :sid UID nick hops ts modes user host ip uid :gecos
     def got_uid(self, lp, suffix):
         s = self.state.sbysid[lp[0][1:]]
-        c = Client(None, s, lp[2],
+        c = Client(s, lp[2],
                    user = lp[6],
                    host = lp[7],
                    gecos = suffix,

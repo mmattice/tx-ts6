@@ -1,30 +1,34 @@
-from ts6.client import Client
+from ts6.client import IRCClient
 from ts6.ircd import IrcdFactory, IrcdConn
 from ts6.server import Server
 
-class Idoru(Client):
+class Idoru(IRCClient):
     def userJoined(self, client, channel):
-        Client.userJoined(self, client, channel)
+        IRCClient.userJoined(self, client, channel)
         print '%s: saw join %s %s' % (self.nick, client, channel)
 
     def joined(self, channel):
-        Client.joined(self, channel)
+        IRCClient.joined(self, channel)
         print '%s: joined %s' % (self.nick, channel)
 
     def userLeft(self, client, channel, message):
-        Client.userLeft(self, client, channel, message)
+        IRCClient.userLeft(self, client, channel, message)
         print '%s: saw part %s %s "%s"' % (self.nick, client, channel, message)
 
     def left(self, channel):
-        Client.left(self, channel)
+        IRCClient.left(self, channel)
         print '%s: left %s' % (self.nick, channel)
 
     def userQuit(self, client, message):
-        Client.userQuit(self, client, message)
+        IRCClient.userQuit(self, client, message)
         print '%s: saw quit %s "%s"' % (self.nick, client, message)
 
     def privmsg(self, client, target, message):
         print '%s: saw privmsg %s->%s "%s"' % (self.nick, client, target, message)
+        if (str(target)[0] == '#') and ('cycle' in message):
+            self.part(target)
+            self.join(target)
+
 
     def noticed(self, client, target, message):
         print '%s:  saw notice %s->%s "%s"' % (self.nick, client, target, message)
@@ -70,7 +74,7 @@ class TestIrcdFactory(IrcdFactory):
         self.state.servername = 'ts6.grixis.local'
         self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
         nicks = ('idoru','foo', 'bar', 'baz', 'ack', 'zap', 'kay')
-        self.clients = map(lambda x: Idoru(self, self.me, x), nicks)
+        self.clients = map(lambda x: Idoru(self, self.me, x, modes = 'oS'), nicks)
         for c in self.clients:
             self.state.addClient(c)
             c.connectionMade()
