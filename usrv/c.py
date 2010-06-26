@@ -3,7 +3,7 @@ from usrv.a import authserv
 
 class C(Service):
     def __init__(self, factory, server, nick, *args, **kwargs):
-        Service.__init__(self, factory, server, nick, args, kwargs)
+        Service.__init__(self, factory, server, nick, *args, **kwargs)
         self.chans = {}
     
     def getchan(self, name):

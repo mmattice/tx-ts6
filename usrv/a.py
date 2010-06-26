@@ -7,7 +7,7 @@ authserv = None
 class A(Service):
     def __init__(self, factory, server, nick, *args, **kwargs):
         global authserv
-        Service.__init__(self, factory, server, nick, args, kwargs)
+        Service.__init__(self, factory, server, nick, *args, **kwargs)
         self.accts = {}
         if not authserv:
             authserv = self
