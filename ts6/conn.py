@@ -285,9 +285,6 @@ class Conn(basic.LineReceiver):
         dest._privmsg(source, dest, message)
 
     def privmsg(self, source, dest, message):
-        # dest_t should never be a Client instance
-        # as IRCClient wouldn't know what it was, but
-        # we can accept them
         if getattr(dest, 'uid', None):
             # destination is Client
             if dest.conn:
