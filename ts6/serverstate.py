@@ -56,6 +56,9 @@ class ServerState:
             chref = self.chans[chref.lower()]
         return chref
 
+    def ClientByNick(self, nick):
+        return self.cbynick[nick.lower()]
+
     def Client(self, uid):
         return self.cbyuid[uid]
 
