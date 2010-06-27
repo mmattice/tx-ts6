@@ -503,6 +503,38 @@ class Client:
         connected to this server.
         """
 
+    ### Internal methods
+    def _privmsg(self, source, dest, message):
+        """
+        Called when we recieve a PRIVMSG
+
+        @type source: C{Client}
+        @param source: A Client object referring to the sender of the message
+
+        @type dest: C{Client} or C{Channel}
+        @param dest: A Client or Channel object referring to the destination of the message
+
+        @type message: C{str}
+        @param message: The message sent
+
+        """
+
+    def _noticed(self, source, dest, message):
+        """
+        Called when we recieve a NOTICE
+
+        @type source: C{Client}
+        @param source: A Client object referring to the sender of the message
+
+        @type dest: C{Client} or C{Channel}
+        @param dest: A Client or Channel object referring to the destination of the message
+
+        @type message: C{str}
+        @param message: The message sent
+
+        """
+
+
     ### Methods involving me directly
 
     def privmsg(self, user, channel, message):
@@ -894,9 +926,8 @@ class Client:
 
 
 
-class IRCClient(Client):
+class TS6Client(Client):
     def __init__(self, factory, server, nick, *args, **kwargs):
-        #print 'IRCClient.__init__ factory = %s, server = %s, nick = %s, args = %s, kwargs = %s' % (factory, server, nick, args, kwargs)
         defl = { 'user' : 'twisted',
                  'host' : server.name,
                  'hiddenhost' : '*',
@@ -909,28 +940,6 @@ class IRCClient(Client):
         Client.__init__(self, server, nick, *args, **kwargs)
         self.factory = factory
         self.uid = server.sid + self.factory.state.mkuid()
-        print "registered Client %s" % self
-
-    def __sendLine(self, line):
-        self.conn.sendLine(line)
-
-    def _reallySendLine(self, line):
-        """ Should not be called directly
-            - IRCClient function that assumes it's speaking to a real server
-        """
-        pass
-
-    def sendLine(self, line):
-        """ Should not be called directly
-            - IRCClient function that assumes it's speaking to a real server
-        """
-        pass
-
-    def _sendLine(self):
-        """ Should not be called directly
-            - IRCClient function that assumes it's speaking to a real server
-        """
-        pass
 
     def connectionMade(self):
         """
@@ -953,11 +962,14 @@ class IRCClient(Client):
         self.nick = nickname
         self.signedOn()
 
+    def _privmsg(self, source, dest, message):
+        self.privmsg(source, dest, message)
+
     def msg(self, dest, message, length = None):
         """Send a message to a user or channel.
 
-        @type dest: C{str}
-        @param dest: The username or channel name to which to direct the
+        @type dest: C{Client} or C{Channel}
+        @param dest: The Client or Channel object to which to direct the
         message.
 
         @type message: C{str}
@@ -973,16 +985,88 @@ class IRCClient(Client):
         """
         self.factory.state.Privmsg(self, dest, message)
 
-    def notice(self, user, message):
+    def _noticed(self, source, dest, message):
+        self.noticed(source, dest, message)
+
+    def notice(self, dest, message):
         """
-        Send a notice to a user.
+        Send a notice to a user or channel.
+
+        Notices are like normal message, but should never get automated
+        replies.
+
+        @type user: C{Client} or C{Channel}
+        @param user: The user to send a notice to.
+        @type message: C{str}
+        @param message: The contents of the notice to send.
+        """
+        self.factory.state.Notice(self, dest, message)
+
+
+class IRCClient(TS6Client):
+    def __sendLine(self, line):
+        self.conn.sendLine(line)
+
+    def _reallySendLine(self, line):
+        """ Should not be called directly
+            - IRCClient function that assumes it's speaking to a real server
+        """
+        pass
+
+    def sendLine(self, line):
+        """ Should not be called directly
+            - IRCClient function that assumes it's speaking to a real server
+        """
+        pass
+
+    def _sendLine(self):
+        """ Should not be called directly
+            - IRCClient function that assumes it's speaking to a real server
+        """
+        pass
+
+    def _privmsg(self, source, dest, message):
+        self.privmsg(str(source), str(dest), message)
+
+    def msg(self, dest, message, length = None):
+        """Send a message to a user or channel.
+
+        @type dest: C{str}
+        @param dest: The nick or channel to which to direct the
+        message.
+
+        @type message: C{str}
+        @param message: The text to send
+
+        @type length: C{int}
+        @param length: The maximum number of octets to send at a time.  This
+        has the effect of turning a single call to msg() into multiple
+        commands to the server.  This is useful when long messages may be
+        sent that would otherwise cause the server to kick us off or silently
+        truncate the text we are sending.  If None is passed, the entire
+        message is always send in one command.
+        """
+        if (dest[0] in self.supported.getFeature('CHANTYPES', {})):
+            TS6Client.msg(self, self.factory.state.Channel(dest), message, length)
+        else:
+            TS6Client.msg(self, self.factory.state.ClientByNick(dest), message, length)
+
+    def _noticed(self, source, dest, message):
+        self.noticed(str(source), str(dest), message)
+
+    def notice(self, dest, message):
+        """
+        Send a notice to a user or channel.
 
         Notices are like normal message, but should never get automated
         replies.
 
         @type user: C{str}
-        @param user: The user to send a notice to.
+        @param user: The user or channel to send a notice to.
         @type message: C{str}
         @param message: The contents of the notice to send.
         """
-        self.factory.state.Notice(self, user, message)
+        if (dest[0] in self.supported.getFeature('CHANTYPES', {})):
+            TS6Client.notice(self, self.factory.state.Channel(dest), message, length)
+        else:
+            TS6Client.notice(self, self.factory.state.ClientByNick(dest), message, length)

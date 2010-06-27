@@ -51,6 +51,11 @@ class ServerState:
         for channame, channel in self.chans.iteritems():
             self.conn.burstchan(channel)
 
+    def Channel(self, chref):
+        if str(type(chref)) == """<type 'str'>""":
+            chref = self.chans[chref.lower()]
+        return chref
+
     def Client(self, uid):
         return self.cbyuid[uid]
 

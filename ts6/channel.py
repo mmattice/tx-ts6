@@ -36,19 +36,19 @@ class Channel:
     def __str__(self):
         return self.name
 
-    def privmsg(self, source, dest, message):
+    def _privmsg(self, source, dest, message):
         """ distribute messages to local clients """
         for  c in self.clients:
             if c.conn:
                 if c != source:
-                    c.privmsg(source, dest, message)
+                    c._privmsg(source, dest, message)
 
-    def noticed(self, source, dest, message):
+    def _noticed(self, source, dest, message):
         """ distribute notices to local clients """
         for c in self.clients:
             if c.conn:
                 if c != source:
-                    c.noticed(source, dest, message)
+                    c._noticed(source, dest, message)
 
     def kick(self, kicker, kickee, message):
         """ distribute kick notifications """

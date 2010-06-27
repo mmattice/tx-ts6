@@ -213,7 +213,7 @@ class Conn(basic.LineReceiver):
         else:
             msg = ''
         client = self.state.Client(lp[0][1:])
-        channel = lp[2]
+        channel = self.state.Channel(lp[2])
         self.state.Part(client, channel, msg)
 
     # PING :arg
@@ -261,20 +261,16 @@ class Conn(basic.LineReceiver):
     def got_privmsg(self, lp, message):
         source = self.uidorchan(lp[0][1:])
         dest = self.uidorchan(lp[2])
-        dest.privmsg(source, dest, message)
+        dest._privmsg(source, dest, message)
 
-    def privmsg(self, source, dest_t, message):
+    def privmsg(self, source, dest, message):
         # dest_t should never be a Client instance
         # as IRCClient wouldn't know what it was, but
         # we can accept them
-        if getattr(dest_t, 'uid', None):
-            dest = dest_t
-        else:
-            dest = self.nickorchan(dest_t)
         if getattr(dest, 'uid', None):
             # destination is Client
             if dest.conn:
-                dest.privmsg(source, dest, message)
+                dest._privmsg(source, dest, message)
             else:
                 self.sendLine(':%s PRIVMSG %s :%s' % (source.uid, dest.uid, message))
         else:
@@ -283,7 +279,7 @@ class Conn(basic.LineReceiver):
             # distribute to local clients
             for c in dest.clients:
                 if c.conn:
-                    c.privmsg(source, dest, message)
+                    c._privmsg(source, dest, message)
 
     # ENCAP, argh.
     # :src ENCAP * <cmd [args...]>
