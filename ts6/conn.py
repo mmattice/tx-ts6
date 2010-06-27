@@ -285,18 +285,16 @@ class Conn(basic.LineReceiver):
         dest._privmsg(source, dest, message)
 
     def privmsg(self, source, dest, message):
-        if getattr(dest, 'uid', None):
-            # destination is Client
+        if isinstance(dest, Client):
             if dest.conn:
                 dest._privmsg(source, dest, message)
             else:
                 self.sendLine(':%s PRIVMSG %s :%s' % (source.uid, dest.uid, message))
-        else:
-            # destination is channel
+        else:            # destination is channel
             self.sendLine(':%s PRIVMSG %s :%s' % (source.uid, dest.name, message))
             # distribute to local clients
             for c in dest.clients:
-                if c.conn:
+                if (c.conn and (c != source)):
                     c._privmsg(source, dest, message)
 
     # ENCAP, argh.
