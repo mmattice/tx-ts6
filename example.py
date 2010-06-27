@@ -30,7 +30,10 @@ class Idoru(IRCClient):
             self.join(target)
         elif ('ts6' not in client):
             try:
-                self.msg(target, message)
+                if ('@' in target):
+                    self.msg(client.split('!')[0], message)
+                else:
+                    self.msg(target, message)
             except Exception, msg:
                 print 'Idoru.privmsg failed %s - %s' % (Exception, msg)
 
