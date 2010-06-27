@@ -5,6 +5,8 @@ class Channel:
         self.name = name
         self.modes = modes
         self.topic = ''
+        self.topicsetter = None
+        self.topicTS = ts
         self.clients = []
         self.ts = ts
 
@@ -57,3 +59,21 @@ class Channel:
             if c.conn:
                 c._userKicked(kickee, self, kicker, message)
         kickee._kickedFrom(self, kicker, message)
+
+    def setTopic(self, client, topic):
+        self.topicsetter = str(client)
+        self.topic = topic
+        for c in self.clients:
+            if c.conn:
+                c._topicUpdated(client, self, topic)
+        if client.conn:
+            client.conn.topic(client, self, topic)
+
+    def topicburst(self, topicTS, topicsetter, topic):
+        if (topicTS < self.topicTS):
+            self.topicsetter = topicsetter
+            self.topic = topic
+            self.topicTS = topicTS
+            for c in self.clients:
+                if c.conn:
+                    c._topicUpdated(topicsetter, self, topic)

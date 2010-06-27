@@ -69,6 +69,9 @@ class Conn(basic.LineReceiver):
         for chunk in clientchunks:
             self.sendLine(':%s SJOIN %lu %s + :%s' %
                           (self.state.sid, channel.ts, channel.name, ' '.join(map(lambda x: x.uid, chunk))))
+        if (channel.topic):
+            self.sendLine(':%s TB %s %lu %s :%s' %
+                          (self.state.sid, channel.name, channel.topicTS, channel.topicsetter, channel.topic))
 
     # :sid UID nick hops ts modes user host ip uid :gecos
     def got_uid(self, lp, suffix):
@@ -215,6 +218,24 @@ class Conn(basic.LineReceiver):
         client = self.state.Client(lp[0][1:])
         channel = self.state.Channel(lp[2])
         self.state.Part(client, channel, msg)
+
+    def topic(self, client, channel, topic):
+        self.sendLine(':%s TOPIC %s :%s' % (client.uid, channel, topic))
+
+    def got_topic(self, lp, topic):
+        client = self.state.Client(lp[0][1:])
+        channel = self.state.Channel(lp[2])
+        channel.setTopic(client, topic)
+
+    def got_tb(self, lp, topic):
+        s = self.state.sbysid[lp[0][1:]]
+        channel = self.state.Channel(lp[2])
+        topicTS = int(lp[3])
+        if (len(lp) == 5):
+            topicsetter = lp[4]
+        else:
+            topicsetter = str(s)
+        channel.topicburst(topicTS, topicsetter, topic)
 
     # PING :arg
     # :sid PING arg :dest

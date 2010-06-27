@@ -1023,6 +1023,9 @@ class TS6Client(Client):
     def _userRenamed(self, oldnick, client):
         self.userRenamed(oldnick, client)
 
+    def _topicUpdated(self, client, channel, topic):
+        self.topicUpdated(client, channel, topic)
+
 
 class IRCClient(TS6Client):
     def __sendLine(self, line):
@@ -1120,3 +1123,6 @@ class IRCClient(TS6Client):
                 visible = True
         if visible:
             self.userRenamed(oldnick, client.nick)
+
+    def _topicUpdated(self, client, channel, topic):
+        self.topicUpdated(str(client), str(channel), topic)
