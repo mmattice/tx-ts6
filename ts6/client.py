@@ -1014,6 +1014,12 @@ class TS6Client(Client):
     def _userJoined(self, client, channel):
         self.userJoined(client, channel)
 
+    def _kickedFrom(self, channel, kicker, message):
+        self.kickedFrom(channel, kicker, message)
+
+    def _userKicked(self, kickee, channel, kicker, message):
+        self.userKicked(kickee, channel, kicker, message)
+
 
 class IRCClient(TS6Client):
     def __sendLine(self, line):
@@ -1097,3 +1103,9 @@ class IRCClient(TS6Client):
 
     def _userJoined(self, client, channel):
         self.userJoined(str(client), str(channel))
+
+    def _kickedFrom(self, channel, kicker, message):
+        self.kickedFrom(str(channel), str(kicker), message)
+
+    def _userKicked(self, kickee, channel, kicker, message):
+        self.userKicked(str(kickee), str(channel), str(kicker), message)

@@ -55,5 +55,5 @@ class Channel:
         self.clients.remove(kickee)
         for c in self.clients:
             if c.conn:
-                c.userKicked(kickee, self, kicker, message)
-        kickee.kickedFrom(self, kicker, message)
+                c._userKicked(kickee, self, kicker, message)
+        kickee._kickedFrom(self, kicker, message)

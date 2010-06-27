@@ -43,6 +43,7 @@ class Idoru(IRCClient):
 
     def kickedFrom(self, channel, kicker, message):
         print '%s was kicked from %s by %s "%s"' % (self, channel, kicker, message)
+        self.join(channel)
 
     def userKicked(self, kickee, channel, kicker, message):
         print '%s: saw %s kick %s from %s "%s"' % (self, kicker, kickee, channel, message)
