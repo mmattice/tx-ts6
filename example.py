@@ -1,4 +1,4 @@
-from ts6.client import IRCClient
+from ts6.client import IRCClient, TS6Client
 from ts6.ircd import IrcdFactory, IrcdConn
 from ts6.server import Server
 
@@ -52,6 +52,61 @@ class Idoru(IRCClient):
         print '%s: signedOn' % (self.nick)
         self.join('#test')
 
+    def userRenamed(self, oldnick, newnick):
+        print '%s: saw %s /nick to %s' % (self, oldnick, newnick)
+
+class NewIdoru(TS6Client):
+    def userJoined(self, client, channel):
+        TS6Client.userJoined(self, client, channel)
+        print '%s: saw join %s %s' % (self.nick, client, channel)
+
+    def joined(self, channel):
+        TS6Client.joined(self, channel)
+        print '%s: joined %s' % (self.nick, channel)
+
+    def userLeft(self, client, channel, message):
+        TS6Client.userLeft(self, client, channel, message)
+        print '%s: saw part %s %s "%s"' % (self.nick, client, channel, message)
+
+    def left(self, channel):
+        TS6Client.left(self, channel)
+        print '%s: left %s' % (self.nick, channel)
+
+    def userQuit(self, client, message):
+        TS6Client.userQuit(self, client, message)
+        print '%s: saw quit %s "%s"' % (self.nick, client, message)
+
+    def privmsg(self, client, target, message):
+        print '%s: saw privmsg %s->%s "%s"' % (self.nick, client, target, message)
+        if (target[0] == '#') and ('cycle' in message):
+            self.part(target)
+            self.join(target)
+        elif ('ts6' not in client):
+            try:
+                if ('@' in target):
+                    self.msg(client.nick, message)
+                else:
+                    self.msg(target, message)
+            except Exception, msg:
+                print 'Idoru.privmsg failed %s - %s' % (Exception, msg)
+
+    def noticed(self, client, target, message):
+        print '%s:  saw notice %s->%s "%s"' % (self.nick, client, target, message)
+
+    def kickedFrom(self, channel, kicker, message):
+        print '%s was kicked from %s by %s "%s"' % (self, channel, kicker, message)
+        self.join(channel.name)
+
+    def userKicked(self, kickee, channel, kicker, message):
+        print '%s: saw %s kick %s from %s "%s"' % (self, kicker, kickee, channel, message)
+
+    def signedOn(self):
+        print '%s: signedOn' % (self.nick)
+        self.join('#test')
+
+    def userRenamed(self, oldnick, client):
+        print '%s: saw %s(%s) /nick to %s' % (self, oldnick, client.login, client.nick)
+
 class TestIrcdConn(IrcdConn):
     password = 'acceptpw'
     def sendLine(self, line):
@@ -84,6 +139,7 @@ class TestIrcdFactory(IrcdFactory):
         self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
         nicks = ('idoru','foo', 'bar', 'baz', 'ack', 'zap', 'kay')
         self.clients = map(lambda x: Idoru(self, self.me, x, modes = 'oS'), nicks)
+        self.clients.append(NewIdoru(self, self.me, 'ts6idoru', modes = 'oS'))
         for c in self.clients:
             self.state.addClient(c)
             c.connectionMade()
