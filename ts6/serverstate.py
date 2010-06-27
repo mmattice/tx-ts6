@@ -8,6 +8,7 @@ class ServerState:
         self.servername = 'ts6.local'
         self.serverdesc = 'twisted-ts6 test'
         self.chans = {}
+        self.chansbyuid = {}
         self.sbysid = {}
         self.sbyname = {}
         self.cbyuid = {}
@@ -64,12 +65,14 @@ class ServerState:
 
     def addClient(self, client):
         self.cbyuid[client.uid] = client
+        self.chansbyuid[client.uid] = set()
         self.cbynick[client.nick.lower()] = client
 
     def delClient(self, client = None, uid = None):
         if client:
             uid = client.uid
         del(self.cbynick[client.nick.lower()])
+        del(self.chansbyuid[uid])
         del(self.cbyuid[uid])
 
     def NickChange(self, uid, newnick, ts):
@@ -97,11 +100,13 @@ class ServerState:
                     self.conn.sjoin(client, tc)
                 else:
                     self.conn.join(client, tc)
+            self.chansbyuid[client.uid].add(tc)
             tc.joined(client)
 
     def Part(self, client, channel, reason=None):
         """ called from Conn.got_part and ServerState.leave """
         tc = self.Channel(channel)
+        self.chansbyuid[client.uid].remove(tc)
         if client in tc.clients:
             if client.conn:
                 self.conn.part(client, tc, reason)
