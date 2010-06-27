@@ -25,9 +25,14 @@ class Idoru(IRCClient):
 
     def privmsg(self, client, target, message):
         print '%s: saw privmsg %s->%s "%s"' % (self.nick, client, target, message)
-        if (str(target)[0] == '#') and ('cycle' in message):
+        if (target[0] == '#') and ('cycle' in message):
             self.part(target)
             self.join(target)
+        elif ('ts6' not in client):
+            try:
+                self.msg(target, message)
+            except Exception, msg:
+                print 'Idoru.privmsg failed %s - %s' % (Exception, msg)
 
 
     def noticed(self, client, target, message):
