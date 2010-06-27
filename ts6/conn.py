@@ -65,7 +65,7 @@ class Conn(basic.LineReceiver):
     def burstchan(self, channel):
         """ send known channel state for burst """
         print 'bursting channel %s' % (channel,)
-        clientchunks = split_every(20, channel.clients)
+        clientchunks = split_every(15, channel.clients)
         for chunk in clientchunks:
             self.sendLine(':%s SJOIN %lu %s + :%s' %
                           (self.state.sid, channel.ts, channel.name, ' '.join(map(lambda x: x.uid, chunk))))
