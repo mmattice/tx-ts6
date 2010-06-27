@@ -99,13 +99,13 @@ class ServerState:
                     self.conn.join(client, tc)
             tc.joined(client)
 
-    def Part(self, client, channelname, reason=None):
-        cn = channelname.lower()
-        tc = self.chans[cn]
+    def Part(self, client, channel, reason=None):
+        """ called from Conn.got_part and ServerState.leave """
+        tc = self.Channel(channel)
         if client in tc.clients:
-            if self.conn:
+            if client.conn:
                 self.conn.part(client, tc, reason)
-            tc.left(client, reason)
+            tc._left(client, reason) # manages notifications of local clients
 
     def Away(self, uid, msg):
         c = self.Client(uid)

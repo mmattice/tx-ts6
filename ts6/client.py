@@ -1002,6 +1002,18 @@ class TS6Client(Client):
         """
         self.factory.state.Notice(self, dest, message)
 
+    def _left(self, channel):
+        self.left(channel)
+
+    def _userLeft(self, channel, message):
+        self.userLeft(channel, message)
+
+    def _joined(self, channel):
+        self.joined(channel)
+
+    def _userJoined(self, client, channel):
+        self.userJoined(client, channel)
+
 
 class IRCClient(TS6Client):
     def __sendLine(self, line):
@@ -1070,3 +1082,18 @@ class IRCClient(TS6Client):
             TS6Client.notice(self, self.factory.state.Channel(dest), message, length)
         else:
             TS6Client.notice(self, self.factory.state.ClientByNick(dest), message, length)
+
+    def _left(self, channel):
+        self.left(str(channel))
+
+    def left(self, channel):
+        pass
+
+    def _userLeft(self, client, channel, message):
+        self.userLeft(str(client), str(channel), message)
+
+    def _joined(self, channel):
+        self.joined(channel)
+
+    def _userJoined(self, client, channel):
+        self.userJoined(str(client), str(channel))

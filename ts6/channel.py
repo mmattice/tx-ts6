@@ -13,17 +13,17 @@ class Channel:
         for c in self.clients:
             if c.conn:
                 if c == client:
-                    c.joined(self)
+                    c._joined(self)
                 else:
-                    c.userJoined(client, self)
+                    c._userJoined(client, self)
 
-    def left(self, client, message):
+    def _left(self, client, message):
         for c in self.clients:
             if c.conn:
                 if c == client:
-                    c.left(self)
+                    c._left(self)
                 else:
-                    c.userLeft(client, self, message)
+                    c._userLeft(client, self, message)
         self.clients.remove(client)
 
     def modeset(self, src, modes):
