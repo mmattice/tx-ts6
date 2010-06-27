@@ -1005,8 +1005,8 @@ class TS6Client(Client):
     def _left(self, channel):
         self.left(channel)
 
-    def _userLeft(self, channel, message):
-        self.userLeft(channel, message)
+    def _userLeft(self, client, channel, message):
+        self.userLeft(client, channel, message)
 
     def _joined(self, channel):
         self.joined(channel)
