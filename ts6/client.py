@@ -1020,6 +1020,9 @@ class TS6Client(Client):
     def _userKicked(self, kickee, channel, kicker, message):
         self.userKicked(kickee, channel, kicker, message)
 
+    def _userRenamed(self, oldnick, client):
+        self.userRenamed(oldnick, client)
+
 
 class IRCClient(TS6Client):
     def __sendLine(self, line):
@@ -1109,3 +1112,11 @@ class IRCClient(TS6Client):
 
     def _userKicked(self, kickee, channel, kicker, message):
         self.userKicked(str(kickee), str(channel), str(kicker), message)
+
+    def _userRenamed(self, oldnick, client):
+        visible = False
+        for ch in self.factory.state.chansbyuid[self.uid]:
+            if client in ch.clients:
+                visible = True
+        if visible:
+            self.userRenamed(oldnick, client.nick)

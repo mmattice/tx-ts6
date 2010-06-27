@@ -82,6 +82,9 @@ class ServerState:
         c.nick = newnick
         c.ts = ts
         c.identified = False
+        for nick, lc in self.cbynick.iteritems():
+            if (lc.conn and (lc != c)):
+                lc._userRenamed(oldnick, c)
 
     def Join(self, client, channel):
         created = False
