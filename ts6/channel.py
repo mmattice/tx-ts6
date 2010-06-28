@@ -28,9 +28,6 @@ class Channel:
                     c._userLeft(client, self, message)
         self.clients.remove(client)
 
-    def modeset(self, src, modes):
-        print '%s modes %s' % (self, modes)
-
     def tschange(self, newts, modes):
         print '%s ts change %d %s' % (self, newts, modes)
         self.ts = newts
@@ -77,3 +74,29 @@ class Channel:
             for c in self.clients:
                 if c.conn:
                     c._topicUpdated(topicsetter, self, topic)
+
+    def getModeParams(self, supported):
+        """
+        Get channel modes that require parameters for correct parsing.
+
+        @rtype: C{[str, str]}
+        @return C{[add, remove]}
+        """
+        # PREFIX modes are treated as "type B" CHANMODES, they always take
+        # parameter.
+        params = ['', '']
+        prefixes = supported.getFeature('PREFIX', {})
+        params[0] = params[1] = ''.join(prefixes.iterkeys())
+
+        chanmodes = supported.getFeature('CHANMODES')
+        if chanmodes is not None:
+            params[0] += chanmodes.get('addressModes', '')
+            params[0] += chanmodes.get('param', '')
+            params[1] = params[0]
+            params[0] += chanmodes.get('setParam', '')
+        return params
+
+    def _modeChanged(self, src, dest, added, removed):
+        for c in self.clients:
+            if c.conn:
+                c._modeChanged(src, dest, added, removed)

@@ -5,400 +5,6 @@ import time
 from twisted.words.protocols.irc import ctcpExtract, ctcpStringify
 from ts6.channel import Channel
 
-class _CommandDispatcherMixin(object):
-    """
-    Dispatch commands to handlers based on their name.
-
-    Command handler names should be of the form C{prefix_commandName},
-    where C{prefix} is the value specified by L{prefix}, and must
-    accept the parameters as given to L{dispatch}.
-
-    Attempting to mix this in more than once for a single class will cause
-    strange behaviour, due to L{prefix} being overwritten.
-
-    @type prefix: C{str}
-    @ivar prefix: Command handler prefix, used to locate handler attributes
-    """
-    prefix = None
-
-    def dispatch(self, commandName, *args):
-        """
-        Perform actual command dispatch.
-        """
-        def _getMethodName(command):
-            return '%s_%s' % (self.prefix, command)
-
-        def _getMethod(name):
-            return getattr(self, _getMethodName(name), None)
-
-        method = _getMethod(commandName)
-        if method is not None:
-            return method(*args)
-
-        method = _getMethod('unknown')
-        if method is None:
-            raise UnhandledCommand("No handler for %r could be found" % (_getMethodName(commandName),))
-        return method(commandName, *args)
-
-
-class ServerSupportedFeatures(_CommandDispatcherMixin):
-    """
-    Handle ISUPPORT messages.
-
-    Feature names match those in the ISUPPORT RFC draft identically.
-
-    Information regarding the specifics of ISUPPORT was gleaned from
-    <http://www.irc.org/tech_docs/draft-brocklesby-irc-isupport-03.txt>.
-    """
-    prefix = 'isupport'
-
-    """
-    ircd-seven-1.0.1(20100130-d3139a423e1f, Charybdis 3.2-dev). ballard.freenode.net eHIKMpSZ6 TS6ow 01H
-        CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbq,k,flj,CFLMPQScgimnprstz
-        CHANLIMIT=#:120 PREFIX=(ov)@+ MAXLIST=bqeI:100 MODES=4
-        NETWORK=freenode KNOCK STATUSMSG=@+ CALLERID=g SAFELIST ELIST=U
-        CASEMAPPING=rfc1459 CHARSET=ascii NICKLEN=16 CHANNELLEN=50
-        TOPICLEN=390 ETRACE CPRIVMSG CNOTICE DEAF=D MONITOR=100 FNC
-        TARGMAX=NAMES:1,LIST:1,KICK:1,WHOIS:1,PRIVMSG:4,NOTICE:4,ACCEPT:,MONITOR:
-        EXTBAN=$,arx WHOX CLIENTVER=3.0
-    """
-
-    def __init__(self):
-        self._features = {
-            'CHANNELLEN': 50,
-            'CHANTYPES': tuple('#'),
-            'MODES': 4,
-            'NICKLEN': 16,
-            'PREFIX': self._parsePrefixParam('(ov)@+'),
-            # The ISUPPORT draft explicitly says that there is no default for
-            # CHANMODES, but we're defaulting it here to handle the case where
-            # the IRC server doesn't send us any ISUPPORT information, since
-            # IRCClient.getChannelModeParams relies on this value.
-            'CHANMODES': self._parseChanModesParam(['eIbq','k','flj','CFLMPQScgimnprstz'])}
-
-
-    def _splitParamArgs(cls, params, valueProcessor=None):
-        """
-        Split ISUPPORT parameter arguments.
-
-        Values can optionally be processed by C{valueProcessor}.
-
-        For example::
-
-            >>> ServerSupportedFeatures._splitParamArgs(['A:1', 'B:2'])
-            (('A', '1'), ('B', '2'))
-
-        @type params: C{iterable} of C{str}
-
-        @type valueProcessor: C{callable} taking {str}
-        @param valueProcessor: Callable to process argument values, or C{None}
-            to perform no processing
-
-        @rtype: C{list} of C{(str, object)}
-        @return: Sequence of C{(name, processedValue)}
-        """
-        if valueProcessor is None:
-            valueProcessor = lambda x: x
-
-        def _parse():
-            for param in params:
-                if ':' not in param:
-                    param += ':'
-                a, b = param.split(':', 1)
-                yield a, valueProcessor(b)
-        return list(_parse())
-    _splitParamArgs = classmethod(_splitParamArgs)
-
-
-    def _unescapeParamValue(cls, value):
-        """
-        Unescape an ISUPPORT parameter.
-
-        The only form of supported escape is C{\\xHH}, where HH must be a valid
-        2-digit hexadecimal number.
-
-        @rtype: C{str}
-        """
-        def _unescape():
-            parts = value.split('\\x')
-            # The first part can never be preceeded by the escape.
-            yield parts.pop(0)
-            for s in parts:
-                octet, rest = s[:2], s[2:]
-                try:
-                    octet = int(octet, 16)
-                except ValueError:
-                    raise ValueError('Invalid hex octet: %r' % (octet,))
-                yield chr(octet) + rest
-
-        if '\\x' not in value:
-            return value
-        return ''.join(_unescape())
-    _unescapeParamValue = classmethod(_unescapeParamValue)
-
-
-    def _splitParam(cls, param):
-        """
-        Split an ISUPPORT parameter.
-
-        @type param: C{str}
-
-        @rtype: C{(str, list)}
-        @return C{(key, arguments)}
-        """
-        if '=' not in param:
-            param += '='
-        key, value = param.split('=', 1)
-        return key, map(cls._unescapeParamValue, value.split(','))
-    _splitParam = classmethod(_splitParam)
-
-
-    def _parsePrefixParam(cls, prefix):
-        """
-        Parse the ISUPPORT "PREFIX" parameter.
-
-        The order in which the parameter arguments appear is significant, the
-        earlier a mode appears the more privileges it gives.
-
-        @rtype: C{dict} mapping C{str} to C{(str, int)}
-        @return: A dictionary mapping a mode character to a two-tuple of
-            C({symbol, priority)}, the lower a priority (the lowest being
-            C{0}) the more privileges it gives
-        """
-        if not prefix:
-            return None
-        if prefix[0] != '(' and ')' not in prefix:
-            raise ValueError('Malformed PREFIX parameter')
-        modes, symbols = prefix.split(')', 1)
-        symbols = zip(symbols, xrange(len(symbols)))
-        modes = modes[1:]
-        return dict(zip(modes, symbols))
-    _parsePrefixParam = classmethod(_parsePrefixParam)
-
-
-    def _parseChanModesParam(self, params):
-        """
-        Parse the ISUPPORT "CHANMODES" parameter.
-
-        See L{isupport_CHANMODES} for a detailed explanation of this parameter.
-        """
-        names = ('addressModes', 'param', 'setParam', 'noParam')
-        if len(params) > len(names):
-            raise ValueError(
-                'Expecting a maximum of %d channel mode parameters, got %d' % (
-                    len(names), len(params)))
-        items = map(lambda key, value: (key, value or ''), names, params)
-        return dict(items)
-    _parseChanModesParam = classmethod(_parseChanModesParam)
-
-
-    def getFeature(self, feature, default=None):
-        """
-        Get a server supported feature's value.
-
-        A feature with the value C{None} is equivalent to the feature being
-        unsupported.
-
-        @type feature: C{str}
-        @param feature: Feature name
-
-        @type default: C{object}
-        @param default: The value to default to, assuming that C{feature}
-            is not supported
-
-        @return: Feature value
-        """
-        return self._features.get(feature, default)
-
-
-    def hasFeature(self, feature):
-        """
-        Determine whether a feature is supported or not.
-
-        @rtype: C{bool}
-        """
-        return self.getFeature(feature) is not None
-
-
-    def parse(self, params):
-        """
-        Parse ISUPPORT parameters.
-
-        If an unknown parameter is encountered, it is simply added to the
-        dictionary, keyed by its name, as a tuple of the parameters provided.
-
-        @type params: C{iterable} of C{str}
-        @param params: Iterable of ISUPPORT parameters to parse
-        """
-        for param in params:
-            key, value = self._splitParam(param)
-            if key.startswith('-'):
-                self._features.pop(key[1:], None)
-            else:
-                self._features[key] = self.dispatch(key, value)
-
-
-    def isupport_unknown(self, command, params):
-        """
-        Unknown ISUPPORT parameter.
-        """
-        return tuple(params)
-
-
-    def isupport_CHANLIMIT(self, params):
-        """
-        The maximum number of each channel type a user may join.
-        """
-        return self._splitParamArgs(params, _intOrDefault)
-
-
-    def isupport_CHANMODES(self, params):
-        """
-        Available channel modes.
-
-        There are 4 categories of channel mode::
-
-            addressModes - Modes that add or remove an address to or from a
-            list, these modes always take a parameter.
-
-            param - Modes that change a setting on a channel, these modes
-            always take a parameter.
-
-            setParam - Modes that change a setting on a channel, these modes
-            only take a parameter when being set.
-
-            noParam - Modes that change a setting on a channel, these modes
-            never take a parameter.
-        """
-        try:
-            return self._parseChanModesParam(params)
-        except ValueError:
-            return self.getFeature('CHANMODES')
-
-
-    def isupport_CHANNELLEN(self, params):
-        """
-        Maximum length of a channel name a client may create.
-        """
-        return _intOrDefault(params[0], self.getFeature('CHANNELLEN'))
-
-
-    def isupport_CHANTYPES(self, params):
-        """
-        Valid channel prefixes.
-        """
-        return tuple(params[0])
-
-
-    def isupport_EXCEPTS(self, params):
-        """
-        Mode character for "ban exceptions".
-
-        The presence of this parameter indicates that the server supports
-        this functionality.
-        """
-        return params[0] or 'e'
-
-
-    def isupport_IDCHAN(self, params):
-        """
-        Safe channel identifiers.
-
-        The presence of this parameter indicates that the server supports
-        this functionality.
-        """
-        return self._splitParamArgs(params)
-
-
-    def isupport_INVEX(self, params):
-        """
-        Mode character for "invite exceptions".
-
-        The presence of this parameter indicates that the server supports
-        this functionality.
-        """
-        return params[0] or 'I'
-
-
-    def isupport_KICKLEN(self, params):
-        """
-        Maximum length of a kick message a client may provide.
-        """
-        return _intOrDefault(params[0])
-
-
-    def isupport_MAXLIST(self, params):
-        """
-        Maximum number of "list modes" a client may set on a channel at once.
-
-        List modes are identified by the "addressModes" key in CHANMODES.
-        """
-        return self._splitParamArgs(params, _intOrDefault)
-
-
-    def isupport_MODES(self, params):
-        """
-        Maximum number of modes accepting parameters that may be sent, by a
-        client, in a single MODE command.
-        """
-        return _intOrDefault(params[0])
-
-
-    def isupport_NETWORK(self, params):
-        """
-        IRC network name.
-        """
-        return params[0]
-
-
-    def isupport_NICKLEN(self, params):
-        """
-        Maximum length of a nickname the client may use.
-        """
-        return _intOrDefault(params[0], self.getFeature('NICKLEN'))
-
-
-    def isupport_PREFIX(self, params):
-        """
-        Mapping of channel modes that clients may have to status flags.
-        """
-        try:
-            return self._parsePrefixParam(params[0])
-        except ValueError:
-            return self.getFeature('PREFIX')
-
-
-    def isupport_SAFELIST(self, params):
-        """
-        Flag indicating that a client may request a LIST without being
-        disconnected due to the large amount of data generated.
-        """
-        return True
-
-
-    def isupport_STATUSMSG(self, params):
-        """
-        The server supports sending messages to only to clients on a channel
-        with a specific status.
-        """
-        return params[0]
-
-
-    def isupport_TARGMAX(self, params):
-        """
-        Maximum number of targets allowable for commands that accept multiple
-        targets.
-        """
-        return dict(self._splitParamArgs(params, _intOrDefault))
-
-
-    def isupport_TOPICLEN(self, params):
-        """
-        Maximum length of a topic that may be set.
-        """
-        return _intOrDefault(params[0])
-
-
 
 class Client:
     def __init__(self, server, nick, *args, **kwargs):
@@ -570,36 +176,6 @@ class Client:
             NOTICE message. [...] The object of this rule is to avoid
             loops between clients automatically sending something in
             response to something it received.
-        """
-
-    def modeset(self, modes):
-        # XXX ignores user modes
-        pass
-
-    def modeChanged(self, user, channel, set, modes, args):
-        """Called when users or channel's modes are changed.
-
-        @type user: C{str}
-        @param user: The user and hostmask which instigated this change.
-
-        @type channel: C{str}
-        @param channel: The channel where the modes are changed. If args is
-        empty the channel for which the modes are changing. If the changes are
-        at server level it could be equal to C{user}.
-
-        @type set: C{bool} or C{int}
-        @param set: True if the mode(s) is being added, False if it is being
-        removed. If some modes are added and others removed at the same time
-        this function will be called twice, the first time with all the added
-        modes, the second with the removed ones. (To change this behaviour
-        override the irc_MODE method)
-
-        @type modes: C{str}
-        @param modes: The mode or modes which are being changed.
-
-        @type args: C{tuple}
-        @param args: Any additional information required for the mode
-        change.
         """
 
     def pong(self, user, secs):
@@ -925,6 +501,35 @@ class Client:
         dct['_pings'] = None
         return dct
 
+    def getModeParams(self, supported):
+        """
+        Get user modes that require parameters for correct parsing.
+
+        @rtype: C{[str, str]}
+        @return C{[add, remove]}
+        """
+        return ['', '']
+
+    def modeChanged(self, source, dest, added, removed):
+        """Called when users or channel's modes are changed.
+
+        @type source: C{Client}
+        @param source: The user and hostmask which instigated this change.
+
+        @type dest: C{Client} or C{Channel}
+        @param dest: The place where the modes are changed. If args is
+        empty the channel for which the modes are changing.
+
+        @type added: C{tuple of str}
+        @param added: (modes, args)
+
+        @type removed: C{tuple of str}
+        @param removed: (modes, args)
+
+        """
+
+    def _modeChanged(self, source, dest, added, removed):
+        self.modeChanged(source, dest, added, removed)
 
 
 class TS6Client(Client):
@@ -946,7 +551,7 @@ class TS6Client(Client):
         """
         Called once the we're connected
         """
-        self.supported = ServerSupportedFeatures()
+        self.supported = self.factory.supports
         self.register(self.nick)
 
     def register(self, nickname, hostname='foo', servername='bar'):
@@ -1053,6 +658,7 @@ class TS6Client(Client):
 
     def ctcpQuery_PING(self, user, channel, data):
         self.ctcpMakeReply(user, [("PING", data)])
+
 
 class IRCClient(TS6Client):
     def __sendLine(self, line):
@@ -1164,3 +770,37 @@ class IRCClient(TS6Client):
     def ctcpQuery_PING(self, user, channel, data):
         nick = user.split("!")[0]
         self.ctcpMakeReply(nick, [("PING", data)])
+
+    def modeChanged(self, user, channel, set, modes, args):
+        """Called when users or channel's modes are changed.
+
+        @type user: C{str}
+        @param user: The user and hostmask which instigated this change.
+
+        @type channel: C{str}
+        @param channel: The channel where the modes are changed. If args is
+        empty the channel for which the modes are changing. If the changes are
+        at server level it could be equal to C{user}.
+
+        @type set: C{bool} or C{int}
+        @param set: True if the mode(s) is being added, False if it is being
+        removed. If some modes are added and others removed at the same time
+        this function will be called twice, the first time with all the added
+        modes, the second with the removed ones. (To change this behaviour
+        override the irc_MODE method)
+
+        @type modes: C{str}
+        @param modes: The mode or modes which are being changed.
+
+        @type args: C{tuple}
+        @param args: Any additional information required for the mode
+        change.
+        """
+
+    def _modeChanged(self, source, dest, added, removed):
+        if added:
+            modes, params = zip(*added)
+            self.modeChanged(str(source), str(dest), True, ''.join(modes), params)
+        if removed:
+            modes, params = zip(*removed)
+            self.modeChanged(str(source), str(dest), False, ''.join(modes), params)

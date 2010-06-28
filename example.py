@@ -62,6 +62,9 @@ class Idoru(IRCClient):
     def ctcpQuery_ACTION(self, source, dest, data):
         print '%s: saw ACTION %s->%s "%s"' % (self, source, dest, data)
 
+    def modeChanged(self, user, channel, set, modes, args):
+        print '%s: saw modechange by %s for %s -> %s %s %s' % (self, user, channel, set, modes, args)
+
 class NewIdoru(TS6Client):
     def userJoined(self, client, channel):
         TS6Client.userJoined(self, client, channel)
@@ -120,6 +123,9 @@ class NewIdoru(TS6Client):
 
     def ctcpQuery_ACTION(self, source, dest, data):
         print '%s: saw ACTION %s->%s "%s"' % (self, source, dest, data)
+
+    def modeChanged(self, user, channel, added, removed):
+        print '%s: saw modechange by %s for %s -> added: %s removed: %s' % (self, user, channel, added, removed)
 
 class TestIrcdConn(IrcdConn):
     password = 'acceptpw'

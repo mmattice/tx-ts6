@@ -3,6 +3,7 @@
 import time
 from twisted.internet import reactor, protocol
 from twisted.protocols import basic
+from twisted.words.protocols.irc import parseModes, IRCBadModes
 
 from ts6.channel import Channel
 from ts6.client import Client
@@ -322,29 +323,44 @@ class Conn(basic.LineReceiver):
     # technically legal (charybdis just seems to always use TMODE instead)
     # :sid MODE channel :+modes
     # :uid MODE channel :+modes
-    def got_mode(self, lp, modes):
+    def got_mode(self, lp, suffix):
         src = self.findsrc(lp[0][1:])
+        params = suffix.split(' ')
+        modes, args = params[0], params[1:]
         if lp[2][0] == '#':
             dest = self.state.chans[lp[2]]
         else:
             dest = self.state.Client(lp[2])
-        dest.modeset(src, modes)
+        paramModes = dest.getModeParams(self.factory.supports)
+        try:
+            added, removed = parseModes(modes, args, paramModes)
+        except IRCBadModes:
+            print 'An error occured while parsing the following MODE message: MODE %s :%s' % (lp[3], modes)
+        else:
+            dest._modeChanged(src, dest, added, removed)
 
     # :sid TMODE ts channel +modes
     # :uid TMODE ts channel +modes
     # yes, TMODE really does not use a ':' before the modes arg.
     def got_tmode(self, lp, suffix):
-        modes = lp[4]
+        modes, al = lp[4], lp[5:]
+        args = [a for a in al if a]
         src = self.findsrc(lp[0][1:])
         ts = int(lp[2])
-        dest = self.state.chans[lp[3]]
+        dest = self.state.Channel(lp[3])
         # We have to discard higher-TS TMODEs because they come from a newer
         # version of the channel.
         if ts > dest.ts:
             print 'TMODE: ignoring higher TS mode %s to %s from %s (%d > %d)' % (
                   modes, dest, src, ts, dest.ts)
             return
-        dest.modeset(src, modes)
+        paramModes = dest.getModeParams(self.factory.supports)
+        try:
+            added, removed = parseModes(modes, args, paramModes)
+        except IRCBadModes, msg:
+            print 'An error occured (%s) while parsing the following TMODE message: MODE %s' % (msg, ' '.join(lp))
+        else:
+            dest._modeChanged(src, dest, added, removed)
 
     # :actinguid KICK channel kickeduid :message
     def got_kick(self, lp, message):
