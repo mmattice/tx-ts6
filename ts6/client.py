@@ -2,6 +2,7 @@
 
 import time
 
+from twisted.words.protocols.irc import ctcpExtract, ctcpStringify
 from ts6.channel import Channel
 
 class _CommandDispatcherMixin(object):
@@ -963,6 +964,13 @@ class TS6Client(Client):
         self.signedOn()
 
     def _privmsg(self, source, dest, message):
+        if (len(message) > 0) and (message[0] == '\x01') and (message[-1] == '\x01'):
+            m = ctcpExtract(message)
+            if m['extended']:
+                self.ctcpQuery(source, dest, m['extended'])
+            if not m['normal']:
+                return
+            message = string.join(m['normal'], ' ')
         self.privmsg(source, dest, message)
 
     def msg(self, dest, message, length = None):
@@ -988,7 +996,7 @@ class TS6Client(Client):
     def _noticed(self, source, dest, message):
         self.noticed(source, dest, message)
 
-    def notice(self, dest, message):
+    def notice(self, dest, message, length=None):
         """
         Send a notice to a user or channel.
 
@@ -1026,6 +1034,25 @@ class TS6Client(Client):
     def _topicUpdated(self, client, channel, topic):
         self.topicUpdated(client, channel, topic)
 
+    def ctcpQuery(self, source, dest, messages):
+        """
+        Dispatch method for any CTCP queries received.
+        """
+        for m in messages:
+            method = getattr(self, "ctcpQuery_%s" % m[0], None)
+            if method:
+                method(source, dest, m[1])
+            else:
+                self.ctcpUnknownQuery(source, dest, m[0], m[1])
+
+    def ctcpUnknownQuery(self, source, dest, type, messages):
+        pass
+
+    def ctcpMakeReply(self, user, messages):
+        self.notice(user, ctcpStringify(messages))
+
+    def ctcpQuery_PING(self, user, channel, data):
+        self.ctcpMakeReply(user, [("PING", data)])
 
 class IRCClient(TS6Client):
     def __sendLine(self, line):
@@ -1050,6 +1077,13 @@ class IRCClient(TS6Client):
         pass
 
     def _privmsg(self, source, dest, message):
+        if (len(message) > 0) and (message[0] == '\x01') and (message[-1] == '\x01'):
+            m = ctcpExtract(message)
+            if m['extended']:
+                self.ctcpQuery(str(source), str(dest), m['extended'])
+            if not m['normal']:
+                return
+            message = string.join(m['normal'], ' ')
         self.privmsg(str(source), str(dest), message)
 
     def msg(self, dest, message, length = None):
@@ -1078,7 +1112,7 @@ class IRCClient(TS6Client):
     def _noticed(self, source, dest, message):
         self.noticed(str(source), str(dest), message)
 
-    def notice(self, dest, message):
+    def notice(self, dest, message, length=None):
         """
         Send a notice to a user or channel.
 
@@ -1126,3 +1160,7 @@ class IRCClient(TS6Client):
 
     def _topicUpdated(self, client, channel, topic):
         self.topicUpdated(str(client), str(channel), topic)
+
+    def ctcpQuery_PING(self, user, channel, data):
+        nick = user.split("!")[0]
+        self.ctcpMakeReply(nick, [("PING", data)])

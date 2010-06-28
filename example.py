@@ -59,6 +59,9 @@ class Idoru(IRCClient):
     def topicUpdated(self, client, channel, topic):
         print '%s: saw %s change topic in %s to %s' % (self, client, channel, topic)
 
+    def ctcpQuery_ACTION(self, source, dest, data):
+        print '%s: saw ACTION %s->%s "%s"' % (self, source, dest, data)
+
 class NewIdoru(TS6Client):
     def userJoined(self, client, channel):
         TS6Client.userJoined(self, client, channel)
@@ -114,6 +117,9 @@ class NewIdoru(TS6Client):
 
     def topicUpdated(self, client, channel, topic):
         print '%s: saw %s change topic in %s to %s' % (self, client, channel, topic)
+
+    def ctcpQuery_ACTION(self, source, dest, data):
+        print '%s: saw ACTION %s->%s "%s"' % (self, source, dest, data)
 
 class TestIrcdConn(IrcdConn):
     password = 'acceptpw'
