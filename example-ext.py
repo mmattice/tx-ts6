@@ -65,7 +65,7 @@ class TestIrcdFactory(IrcdFactory):
     def clientConnectionLost(self, connector, reason):
         print 'connection lost - %s' % (reason,)
         self.state.cleanNonLocal()
-        connector.connect()
+        reactor.callLater(10, connector.connect)
 
 
 from twisted.internet import reactor

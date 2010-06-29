@@ -1,24 +1,19 @@
-from ts6.client import Client
+from ts6.client import TS6Client
 
-class Gir(Client):
+class Gir(TS6Client):
     def userJoined(self, client, channel):
-        Client.userJoined(self, client, channel)
         print '%s: saw join %s %s' % (self.nick, client, channel)
 
     def joined(self, channel):
-        Client.joined(self, channel)
         print '%s: joined %s' % (self.nick, channel)
 
     def userLeft(self, client, channel, message):
-        Client.userLeft(self, client, channel, message)
         print '%s: saw part %s %s "%s"' % (self.nick, client, channel, message)
 
     def left(self, channel):
-        Client.left(self, channel)
         print '%s: left %s' % (self.nick, channel)
 
     def userQuit(self, client, message):
-        Client.userQuit(self, client, message)
         print '%s: saw quit %s "%s"' % (self.nick, client, message)
 
     def privmsg(self, client, target, message):
@@ -37,4 +32,3 @@ class Gir(Client):
     def signedOn(self):
         print '%s: signedOn' % (self.nick)
         self.join('#test')
-
