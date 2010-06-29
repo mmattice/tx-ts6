@@ -387,6 +387,9 @@ class Conn(basic.LineReceiver):
         killeruid = killeruid[1:]
         self.state.Kill(self.state.Client(killeruid), self.state.Client(killeeuid), message)
 
+    def got_chghost(self, lp, suffix):
+        self.state.Client(lp[2]).ChgHost(lp[3])
+
     # Interface methods.
     def connectionMade(self):
         self.register()

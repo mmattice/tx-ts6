@@ -549,6 +549,9 @@ class Client:
                         self.modes = ''.join(ml)
         self.modeChanged(source, dest, added, removed)
 
+    def ChgHost(self, newhost):
+        self.host = newhost
+
 
 class TS6Client(Client):
     def __init__(self, factory, server, nick, *args, **kwargs):
