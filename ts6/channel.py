@@ -57,6 +57,14 @@ class Channel:
                 c._userKicked(kickee, self, kicker, message)
         kickee._kickedFrom(self, kicker, message)
 
+    def remove(self, kicker, kickee, message):
+        """ distribute remove notifications """
+        self.clients.remove(kickee)
+        for c in self.clients:
+            if c.conn:
+                c._userLeft(kickee, self, 'requested by %s (%s)' % (kicker.nick, message))
+        kickee._left(self)
+
     def setTopic(self, client, topic):
         self.topicsetter = str(client)
         self.topic = topic

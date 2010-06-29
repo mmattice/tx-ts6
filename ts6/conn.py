@@ -369,6 +369,12 @@ class Conn(basic.LineReceiver):
         kicked = self.uidorchan(lp[3])
         channel.kick(kicker, kicked, message)
 
+    def got_remove(self, lp, message):
+        kicker = self.uidorchan(lp[0][1:])
+        channel = self.uidorchan(lp[2])
+        kicked = self.uidorchan(lp[3])
+        channel.remove(kicker, kicked, message)
+
     # <- :uid KLINE * length user host :reason (time)
     def got_kline(self, lp, message):
         (uid, cmd, encaptarget, duration, usermask, hostmask) = lp
@@ -388,7 +394,7 @@ class Conn(basic.LineReceiver):
     def register(self):
         # hardcoded caps :D
         self.sendLine("PASS %s TS 6 :%s" % (self.password, self.state.sid))
-        self.sendLine("CAPAB :QS EX IE KLN UNKLN ENCAP TB SERVICES EUID EOPMOD MLOCK")
+        self.sendLine("CAPAB :QS EX IE KLN UNKLN ENCAP TB SERVICES EUID EOPMOD MLOCK REMOVE")
         self.sendLine("SERVER %s 1 :%s" % (self.state.servername, self.state.serverdesc))
 
     # Utility methods
