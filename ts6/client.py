@@ -529,6 +529,24 @@ class Client:
         """
 
     def _modeChanged(self, source, dest, added, removed):
+        if (dest == self):
+            for at in added:
+                if at[1]:
+                    print "unhandled user mode argument %s for %s on %s" % (at[1], at[0], self)
+                else:
+                    if at[0] not in self.modes:
+                        ml = list(self.modes)
+                        ml.append(at[0])
+                        ml.sort()
+                        self.modes = ''.join(ml)
+            for at in removed:
+                if at[1]:
+                    print "unhandled user mode argument for %s on %s" % (at[0], self)
+                else:
+                    if at[0] in self.modes:
+                        ml = list(self.modes)
+                        ml.remove(at[0])
+                        self.modes = ''.join(ml)
         self.modeChanged(source, dest, added, removed)
 
 
