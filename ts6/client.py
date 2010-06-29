@@ -142,6 +142,18 @@ class Client:
         """
 
 
+    def _left(self, channel):
+        self.chans.remove(channel)
+        self.left(channel)
+
+    def _joined(self, channel):
+        self.chans.append(channel)
+        self.joined(channel)
+
+    def _kickedFrom(self, channel, kicker, message):
+        self.chans.remove(channel)
+        self.kickedFrom(channel, kicker, message)
+
     ### Methods involving me directly
 
     def privmsg(self, user, channel, message):
@@ -636,20 +648,11 @@ class TS6Client(Client):
         """
         self.factory.state.Notice(self, dest, message)
 
-    def _left(self, channel):
-        self.left(channel)
-
     def _userLeft(self, client, channel, message):
         self.userLeft(client, channel, message)
 
-    def _joined(self, channel):
-        self.joined(channel)
-
     def _userJoined(self, client, channel):
         self.userJoined(client, channel)
-
-    def _kickedFrom(self, channel, kicker, message):
-        self.kickedFrom(channel, kicker, message)
 
     def _userKicked(self, kickee, channel, kicker, message):
         self.userKicked(kickee, channel, kicker, message)
