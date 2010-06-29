@@ -163,7 +163,11 @@ class Conn(basic.LineReceiver):
         src = self.findsrc(lp[0][1:])
         (ts, name) = (int(lp[2]), lp[3])
 
-        modes = lp[4:]  ### modes surely aren't in the proper format here
+        modes = lp[4]  ### modes surely aren't in the proper format here
+        if len(lp) > 5:
+            args = lp[5:]
+        else:
+            args = []
         uids = suffix.split(' ')
 
         h = self.state.chans.get(name.lower(), None)
@@ -176,7 +180,13 @@ class Conn(basic.LineReceiver):
 
             elif (ts == h.ts):
                 # Merge both sets of modes, since this is 'the same' channel.
-                h.modeset(src, modes)
+                paramModes = h.getModeParams(self.factory.supports)
+                try:
+                    added, removed = parseModes(modes, args, paramModes)
+                except IRCBadModes, msg:
+                    print 'An error occured (%s) while parsing the following TMODE message: MODE %s' % (msg, ' '.join(lp))
+                else:
+                    h._modeChanged(src, h, added, removed)
 
             elif (ts > h.ts):
                 # Disregard incoming modes altogether; just use their client list.
