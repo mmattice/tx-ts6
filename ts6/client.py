@@ -564,6 +564,15 @@ class Client:
     def ChgHost(self, newhost):
         self.host = newhost
 
+    def _topicUpdated(self, client, channel, topic):
+        pass
+
+    def _userKicked(self, kickee, channel, kicker, message):
+        pass
+
+    def _userJoined(self, client, channel):
+        pass
+
 
 class TS6Client(Client):
     def __init__(self, factory, server, nick, *args, **kwargs):

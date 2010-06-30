@@ -13,19 +13,17 @@ class Channel:
     def joined(self, client):
         self.clients.append(client)
         for c in self.clients:
-            if c.conn:
-                if c == client:
-                    c._joined(self)
-                else:
-                    c._userJoined(client, self)
+            if c == client:
+                c._joined(self)
+            else:
+                c._userJoined(client, self)
 
     def _left(self, client, message):
         for c in self.clients:
-            if c.conn:
-                if c == client:
-                    c._left(self)
-                else:
-                    c._userLeft(client, self, message)
+            if c == client:
+                c._left(self)
+            else:
+                c._userLeft(client, self, message)
         self.clients.remove(client)
 
     def tschange(self, newts, modes):
@@ -45,32 +43,28 @@ class Channel:
     def _noticed(self, source, dest, message):
         """ distribute notices to local clients """
         for c in self.clients:
-            if c.conn:
-                if c != source:
-                    c._noticed(source, dest, message)
+            if c != source:
+                c._noticed(source, dest, message)
 
     def kick(self, kicker, kickee, message):
         """ distribute kick notifications """
         self.clients.remove(kickee)
         for c in self.clients:
-            if c.conn:
-                c._userKicked(kickee, self, kicker, message)
+            c._userKicked(kickee, self, kicker, message)
         kickee._kickedFrom(self, kicker, message)
 
     def remove(self, kicker, kickee, message):
         """ distribute remove notifications """
         self.clients.remove(kickee)
         for c in self.clients:
-            if c.conn:
-                c._userLeft(kickee, self, 'requested by %s (%s)' % (kicker.nick, message))
+            c._userLeft(kickee, self, 'requested by %s (%s)' % (kicker.nick, message))
         kickee._left(self)
 
     def setTopic(self, client, topic):
         self.topicsetter = str(client)
         self.topic = topic
         for c in self.clients:
-            if c.conn:
-                c._topicUpdated(client, self, topic)
+            c._topicUpdated(client, self, topic)
         if client.conn:
             client.conn.topic(client, self, topic)
 
@@ -80,8 +74,7 @@ class Channel:
             self.topic = topic
             self.topicTS = topicTS
             for c in self.clients:
-                if c.conn:
-                    c._topicUpdated(topicsetter, self, topic)
+                c._topicUpdated(topicsetter, self, topic)
 
     def getModeParams(self, supported):
         """

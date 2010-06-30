@@ -32,7 +32,7 @@ class ServerState:
                 continue
             c = self.cbyuid[uid]
             for h in c.chans:
-                h.parted(c, 'netsplit')
+                h._left(c, 'netsplit')
                 if len(h.clients) == 0:
                     del(self.chans[h.name.lower()])
             del(self.cbynick[c.nick.lower()])
