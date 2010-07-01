@@ -92,7 +92,11 @@ class Conn(basic.LineReceiver):
     def got_quit(self, lp, suffix):
         uid = lp[0][1:]
         c = self.state.Client(uid)
-        c.userQuit(c, suffix)
+        qnot = set()
+        for chan in c.chans:
+            qnot.update (chan.clients)
+        for client in qnot:
+            client._userQuit(c, suffix)
         self.state.delClient(c)
 
     # :uid NICK newnick :ts

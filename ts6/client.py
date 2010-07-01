@@ -574,6 +574,12 @@ class Client:
     def _userJoined(self, client, channel):
         pass
 
+    def _userLeft(self, client, channel, message):
+        pass
+
+    def _userQuit(self, client, message):
+        pass
+
 
 class TS6Client(Client):
     def __init__(self, factory, server, nick, *args, **kwargs):
@@ -660,6 +666,9 @@ class TS6Client(Client):
 
     def _userLeft(self, client, channel, message):
         self.userLeft(client, channel, message)
+
+    def _userQuit(self, client, message):
+        self.userQuit(client, message)
 
     def _userJoined(self, client, channel):
         self.userJoined(client, channel)
