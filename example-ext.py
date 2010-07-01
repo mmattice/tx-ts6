@@ -5,6 +5,8 @@ from ts6.server import Server
 import os
 from fnmatch import filter as fnfilter
 
+import sys
+
 class TestIrcdConn(IrcdConn):
     password = 'acceptpw'
     def sendLine(self, line):
@@ -50,6 +52,8 @@ def load_client(name):
     """
     Returns Bot class from client/>name<.py
     """
+    if 'clients.%s' % name in sys.modules:
+        del(sys.modules['clients.%s' % name])
     return dyn_load('clients.%s.Bot' % (name,))
     
 class TestIrcdFactory(IrcdFactory):
