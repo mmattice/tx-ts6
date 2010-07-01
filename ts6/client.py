@@ -20,6 +20,7 @@ class Client:
         if (self.login == '*'):
             self.login = None
         self.chans = []
+        self.onkill = None
 
     def __str__(self):
         return '%s!%s@%s' % (self.nick, self.user, self.host)

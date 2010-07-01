@@ -136,7 +136,8 @@ class Conn(basic.LineReceiver):
         self.state.sbysid[self.farsid] = s
         self.state.sbyname[lp[1]] = s
         self.bursting = True
-        for c in self.factory.clients:
+        for cname in self.factory.clients:
+            c = self.factory.clients[cname][1]
             c.conn = self
         self.burstStart()
         self.state.conn = self

@@ -67,6 +67,8 @@ class ServerState:
         self.cbyuid[client.uid] = client
         self.chansbyuid[client.uid] = set()
         self.cbynick[client.nick.lower()] = client
+        if client.conn:
+            self.conn.introduce(client)
 
     def delClient(self, client = None, uid = None):
         if client:
@@ -129,7 +131,8 @@ class ServerState:
         pass
 
     def Kill(self, killer, killee, message):
-        pass
+        if killee.onkill:
+            killee.onkill(killee)
 
     def addServer(self, server):
         self.sbysid[server.sid] = server
