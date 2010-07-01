@@ -1,6 +1,6 @@
 from ts6.client import TS6Client
 
-class Idoru(TS6Client):
+class Bot(TS6Client):
     def userJoined(self, client, channel):
         print '%s: saw join %s %s' % (self.nick, client, channel)
 

@@ -157,12 +157,29 @@ class TestIrcdFactory(IrcdFactory):
         self.state.sid = '90B'
         self.state.servername = 'ts6.grixis.local'
         self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
+        self.clients = {}
         nicks = ('idoru','foo', 'bar', 'baz', 'ack', 'zap', 'kay')
-        self.clients = map(lambda x: Idoru(self, self.me, x, modes = 'oS'), nicks)
-        self.clients.append(NewIdoru(self, self.me, 'ts6idoru', modes = 'oS'))
-        for c in self.clients:
+        for nick in nicks:
+            self.clients[nick] = [ Idoru, Idoru(self, self.me, nick, modes = 'oS') ]
+            self.clients['ts6' + nick] = [ NewIdoru, NewIdoru(self, self.me, 'ts6' + nick, modes = 'oS') ]
+        for nick, rec in self.clients.iteritems():
+            c = rec[1]
+            c.onkill = self.reloadClient
             self.state.addClient(c)
             c.connectionMade()
+
+    def reloadClient(self, client):
+        for nick, rec in self.clients.iteritems():
+            if client == rec[1]:
+                print 'reloadClient called on %s' % (client,)
+                self.state.delClient(rec[1])
+                c = rec[0](self, self.me, nick)
+                rec[1] = c
+                c.onkill = self.reloadClient
+                c.conn = self.state.conn
+                self.state.addClient(c)
+                c.connectionMade()
+
 
     def clientConnectionLost(self, connector, reason):
         print 'connection lost - %s' % (reason,)
