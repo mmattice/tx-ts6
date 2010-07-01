@@ -136,6 +136,7 @@ class ServerState:
         qnot = set()
         for chan in killee.chans:
             qnot.update (chan.clients)
+            chan.clients.remove(killee)
         for client in qnot:
             client._userQuit(killee, 'Killed (%s (%s))' % (killer.nick, message))
         if killee.onkill:
