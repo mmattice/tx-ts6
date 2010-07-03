@@ -4,7 +4,7 @@ from ts6.server import Server
 
 import os
 from fnmatch import filter as fnfilter
-
+import yaml
 import sys
 
 class TestIrcdConn(IrcdConn):
@@ -59,9 +59,10 @@ def load_client(name):
 class TestIrcdFactory(IrcdFactory):
     protocol = TestIrcdConn
 
-    def __init__(self):
-        self.state.sid = '90B'
-        self.state.servername = 'ts6.grixis.local'
+    def __init__(self, config):
+        self.state.sid = config['sid']
+        self.state.servername = config['servername']
+        self.state.serverdesc = config['serverdesc']
         self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
         clist = get_clients()
         self.clients = {}
@@ -92,7 +93,19 @@ class TestIrcdFactory(IrcdFactory):
         self.state.cleanNonLocal()
         reactor.callLater(10, connector.connect)
 
+try:
+    config = yaml.load(file('example.conf'))
+except:
+    config = {'host' : 'localhost',
+              'port' : 5000,
+              'sid'  : '99Z',
+              'servername' : 'ts6.',
+              'serverdesc' : 'TS6 pseudo server',
+              }
 
-from twisted.internet import reactor
-reactor.connectTCP('localhost', 5000, TestIrcdFactory())
+from twisted.internet import reactor, ssl
+if config.get('ssl', False):
+    reactor.connectSSL(config['host'], config['port'], TestIrcdFactory(config), ssl.ClientContextFactory())
+else:
+    reactor.connectTCP(config['host'], config['port'], TestIrcdFactory(config))
 reactor.run()
