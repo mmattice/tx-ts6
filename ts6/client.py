@@ -580,6 +580,11 @@ class Client:
     def _userQuit(self, client, message):
         pass
 
+    def kline(self, duration, usermask, hostmask, reason):
+        self.factory.state.Kline(self, duration, usermask, hostmask, reason)
+
+    def kill(self, killee, message):
+        self.factory.state.Kill(self, killee, message)
 
 class TS6Client(Client):
     def __init__(self, factory, server, nick, *args, **kwargs):

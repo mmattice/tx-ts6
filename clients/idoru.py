@@ -18,6 +18,11 @@ class Bot(TS6Client):
 
     def privmsg(self, client, target, message):
         print '%s: saw privmsg %s->%s "%s"' % (self.nick, client, target, message)
+        mlist = message.split(' ', 4)
+        if mlist[0].lower() == 'kline':
+            self.kline(mlist[1], mlist[2], mlist[3], mlist[4])
+        elif mlist[0].lower() == 'killme':
+            self.kill(client, 'you asked for it')
 
     def noticed(self, client, target, message):
         print '%s:  saw notice %s->%s "%s"' % (self.nick, client, target, message)

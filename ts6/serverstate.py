@@ -130,10 +130,16 @@ class ServerState:
     def addKline(self, kliner, duration, usermask, hostmask, reason):
         pass
 
+    def Kline(self, kliner, duration, usermask, hostmask, reason):
+        self.addKline(kliner, duration, usermask, hostmask, reason)
+        self.conn.kline(kliner, duration, usermask, hostmask, reason)
+
     def Kill(self, killer, killee, message):
         if (message is None) or (message == ''):
             message = '<No reason given>'
         qnot = set()
+        if killee.server.sid != self.sid:
+            self.conn.kill(killer, killee, message)
         for chan in killee.chans:
             qnot.update (chan.clients)
             chan.clients.remove(killee)

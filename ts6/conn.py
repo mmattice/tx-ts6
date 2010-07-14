@@ -268,7 +268,9 @@ class Conn(basic.LineReceiver):
 
     # NOTICE
     def got_notice(self, lp, message):
-        if self.farsid:
+        if lp[0][1:] in self.state.sbysid:
+            pass  # handle snotes
+        elif self.farsid:
             source = self.uidorchan(lp[0][1:])
             dest = self.uidorchan(lp[2])
             dest.noticed(source, dest, message)
@@ -391,10 +393,21 @@ class Conn(basic.LineReceiver):
         channel.remove(kicker, kicked, message)
 
     # <- :uid KLINE * length user host :reason (time)
+    def kline(self, kliner, duration, usermask, hostmask, message):
+        self.sendLine(':%s KLINE * %s %s %s :%s' % (kliner.uid, duration, usermask,
+                                                     hostmask, message))
+
     def got_kline(self, lp, message):
         (uid, cmd, encaptarget, duration, usermask, hostmask) = lp
         uid = uid[1:]
         self.state.addKline(self.state.Client(uid), duration, usermask, hostmask, message)
+
+    def kill(self, killer, killee, message):
+        reason = message
+        if not reason:
+            reason = '<No reason given>'
+        self.sendLine(':%s KILL %s :%s!%s!%s!%s (%s)' % (killer.uid, killee.uid, killer.server.name,
+                                                         killer.host, killer.user, killer.nick, reason))
 
     # <- :killeruid KILL killeeuid :servername!killerhost!killeruser!killernick (<No reason given>)
     def got_kill(self, lp, message):
