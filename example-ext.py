@@ -8,7 +8,6 @@ import yaml
 import sys
 
 class TestIrcdConn(IrcdConn):
-    password = 'acceptpw'
     def sendLine(self, line):
         IrcdConn.sendLine(self,line)
         print '-> %s' % line
@@ -63,6 +62,7 @@ class TestIrcdFactory(IrcdFactory):
         self.state.sid = config['sid']
         self.state.servername = config['servername']
         self.state.serverdesc = config['serverdesc']
+        self.connectpass = config['password']
         self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
         clist = get_clients()
         self.clients = {}
@@ -93,6 +93,12 @@ class TestIrcdFactory(IrcdFactory):
         self.state.cleanNonLocal()
         reactor.callLater(10, connector.connect)
 
+    def buildProtocol(self, addr):
+        p = self.protocol()
+        p.factory = self
+        p.password = self.connectpass
+        return p
+
 try:
     config = yaml.load(file('example.conf'))
 except:
@@ -101,6 +107,7 @@ except:
               'sid'  : '99Z',
               'servername' : 'ts6.',
               'serverdesc' : 'TS6 pseudo server',
+              'password' : 'acceptpw',
               }
 
 from twisted.internet import reactor, ssl
