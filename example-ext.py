@@ -6,14 +6,15 @@ import os
 from fnmatch import filter as fnfilter
 import yaml
 import sys
+import time
 
 class TestIrcdConn(IrcdConn):
     def sendLine(self, line):
         IrcdConn.sendLine(self,line)
-        print '-> %s' % line
+        print '%17.6f -> %s' % (time.time(), line)
 
     def lineReceived(self, line):
-        print '<- %s' % line
+        print '%17.6f <- %s' % (time.time(), line)
         IrcdConn.lineReceived(self, line)
 
     def newClient(self, client):
