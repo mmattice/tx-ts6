@@ -173,7 +173,7 @@ class Conn(basic.LineReceiver):
             args = lp[5:]
         else:
             args = []
-        uids = suffix.split(' ')
+        uids = suffix.split()
 
         h = self.state.chans.get(name.lower(), None)
 
@@ -376,6 +376,7 @@ class Conn(basic.LineReceiver):
             added, removed = parseModes(modes, args, paramModes)
         except IRCBadModes, msg:
             print 'An error occured (%s) while parsing the following TMODE message: MODE %s' % (msg, ' '.join(lp))
+            print 'modes: %s  args: %s - paramModes: %s' % (modes, args, paramModes)
         else:
             dest._modeChanged(src, dest, added, removed)
 
