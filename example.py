@@ -154,6 +154,7 @@ class TestIrcdFactory(IrcdFactory):
     protocol = TestIrcdConn
 
     def __init__(self):
+        IrcdFactory.__init__(self)
         self.state.sid = '90B'
         self.state.servername = 'ts6.grixis.local'
         self.me = Server(self.state.sid, self.state.servername, self.state.serverdesc)
