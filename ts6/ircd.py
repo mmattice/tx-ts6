@@ -42,4 +42,4 @@ class IrcdFactory(protocol.ClientFactory):
             TOPICLEN=390 ETRACE CPRIVMSG CNOTICE DEAF=D MONITOR=100 FNC
             TARGMAX=NAMES:1,LIST:1,KICK:1,WHOIS:1,PRIVMSG:4,NOTICE:4,ACCEPT:,MONITOR:
             EXTBAN=$,arx WHOX CLIENTVER=3.0
-            """)
+            """.split())

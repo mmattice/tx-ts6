@@ -60,6 +60,7 @@ class TestIrcdFactory(IrcdFactory):
     protocol = TestIrcdConn
 
     def __init__(self, config):
+        IrcdFactory.__init__(self)
         self.state.sid = config['sid']
         self.state.servername = config['servername']
         self.state.serverdesc = config['serverdesc']
