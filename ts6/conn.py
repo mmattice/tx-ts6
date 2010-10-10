@@ -126,6 +126,11 @@ class Conn(basic.LineReceiver):
         c = self.state.Client(uid)
         c.identified = not ((len(lp) == 3) and (suffix == 'OFF'))
 
+    def got_oper(self, lp, suffix):
+        uid = lp[0][1:]
+        c = self.state.Client(uid)
+        c.oper = True
+
     # PASS theirpw TS 6 :sid
     def got_pass(self, lp, suffix):
         self.farsid = suffix

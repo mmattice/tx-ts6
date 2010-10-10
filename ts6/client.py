@@ -22,6 +22,7 @@ class Client:
         self.chans = []
         self.onkill = None
         self.identified = False
+        self.oper = False
 
     def __str__(self):
         return '%s!%s@%s' % (self.nick, self.user, self.host)
