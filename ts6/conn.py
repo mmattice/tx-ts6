@@ -131,6 +131,12 @@ class Conn(basic.LineReceiver):
         c = self.state.Client(uid)
         c.oper = True
 
+    # :42XAAAAAE CERTFP :86861f375c422553b7ba55b84c09e97a018c1e9b
+    def got_certfp(self, lp, suffix):
+        uid = lp[0][1:]
+        c = self.state.Client(uid)
+        c.certfp = suffix
+
     # PASS theirpw TS 6 :sid
     def got_pass(self, lp, suffix):
         self.farsid = suffix
