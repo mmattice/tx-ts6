@@ -106,6 +106,14 @@ class Conn(basic.LineReceiver):
         ts = int(suffix)
         self.state.NickChange(uid, newnick, ts)
 
+    #:00A ENCAP idoru. RSFNC 99O000002 Guest53360 1286726756 :1286726786
+    #:00A RSFNC 99O000002 Guest53360 1286726756 :1286726786
+    def got_rsfnc(self, lp, suffix):
+        uid = lp[2]
+        newnick = lp[3]
+        ts = int(suffix)
+        self.state.NickChange(uid, newnick, ts)
+
     def got_away(self, lp, suffix):
         uid = lp[0][1:]
         self.state.Away(uid, suffix)
