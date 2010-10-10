@@ -219,6 +219,18 @@ class Conn(basic.LineReceiver):
         for x in uids:
             self.state.Join(self.state.Client(x[-9:]), name)
 
+    # :31N MLOCK 1177267404 #defocus :ntcPm
+    def got_mlock(self, lp, suffix):
+        src = self.findsrc(lp[0][1:])
+        (ts, name) = (int(lp[2]), lp[3])
+
+        modes = suffix  ### modes surely aren't in the proper format here
+
+        h = self.state.chans.get(name.lower(), None)
+
+        if h and (ts == h.ts):
+            h._setmlock(modes)
+
     def join(self, client, channel):
         if client.server.sid == self.state.sid:
             self.sendLine(':%s JOIN %lu %s +' %

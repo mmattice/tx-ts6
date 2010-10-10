@@ -4,6 +4,7 @@ class Channel:
     def __init__(self, name, modes, ts):
         self.name = name
         self.modes = modes
+        self.mlock = ''
         self.topic = ''
         self.topicsetter = None
         self.topicTS = ts
@@ -101,3 +102,6 @@ class Channel:
         for c in self.clients:
             if c.conn:
                 c._modeChanged(src, dest, added, removed)
+
+    def _setmlock(self, mlock):
+        self.mlock = mlock
